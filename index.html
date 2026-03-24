@@ -220,38 +220,6 @@
             transform: translateX(4px);
         }
         
-        .scroll-hint {
-            position: absolute;
-            bottom: 3rem;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-            opacity: 0;
-        }
-        
-        .scroll-hint span {
-            font-size: 0.75rem;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
-        
-        .scroll-line {
-            width: 1px;
-            height: 50px;
-            background: linear-gradient(to bottom, var(--blue-accent), transparent);
-            transform-origin: top;
-            animation: scrollPulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes scrollPulse {
-            0%, 100% { transform: scaleY(1); opacity: 0.5; }
-            50% { transform: scaleY(0.6); opacity: 1; }
-        }
-        
         /* Sections - Full viewport, appearing one by one */
         .section {
             min-height: 100vh;
@@ -575,7 +543,7 @@
         
         @media (min-width: 1024px) {
             .platforms-grid {
-                grid-template-columns: repeat(5, 1fr);
+                grid-template-columns: repeat(4, 1fr);
                 max-width: 1000px;
             }
         }
@@ -611,7 +579,7 @@
         .platform-item svg {
             width: 28px;
             height: 28px;
-            color: var(--blue-accent);
+            color: var(--navy);
             margin-bottom: 0.5rem;
         }
         
@@ -628,63 +596,6 @@
             font-size: clamp(0.75rem, 2vw, 0.875rem);
             font-weight: 500;
             color: var(--navy);
-        }
-        
-        /* Trust/Quote Section */
-        .trust-section {
-            background: var(--navy) !important;
-            color: var(--white);
-        }
-        
-        .trust-content {
-            text-align: center;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        .trust-quote {
-            font-family: var(--font-display);
-            font-size: clamp(1.5rem, 4vw, 2.5rem);
-            font-style: italic;
-            font-weight: 400;
-            line-height: 1.5;
-            margin-bottom: 2rem;
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        
-        .trust-line {
-            width: 60px;
-            height: 1px;
-            background: var(--yellow);
-            margin: 0 auto 2rem;
-            transform-origin: left;
-            transform: scaleX(0);
-        }
-        
-        .trust-badges {
-            display: flex;
-            justify-content: center;
-            gap: 3rem;
-            flex-wrap: wrap;
-        }
-        
-        .trust-badge {
-            text-align: center;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        
-        .trust-badge-number {
-            font-family: var(--font-display);
-            font-size: 2rem;
-            color: var(--yellow);
-            margin-bottom: 0.25rem;
-        }
-        
-        .trust-badge-label {
-            font-size: 0.875rem;
-            color: rgba(255, 255, 255, 0.6);
         }
         
         /* Contact Section - Responsive */
@@ -815,20 +726,18 @@
 <body>
     <!-- Navigation -->
     <nav class="nav" id="nav">
-        <div class="nav-container">
-            <a href="#" class="nav-logo">ReplyGuyz</a>
-            <ul class="nav-links">
-                <li><a href="#what-we-offer" class="nav-link">What We Offer</a></li>
-                <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
-                <li><a href="#platforms" class="nav-link">Platforms</a></li>
-                <li><a href="#contact" class="nav-link">Contact</a></li>
-            </ul>
-            <button class="nav-mobile-toggle" id="mobileToggle" aria-label="Toggle menu">
-                <svg class="nav-mobile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
-            </button>
-        </div>
+        <a href="#" class="nav-logo">ReplyGuyz</a>
+        <ul class="nav-links">
+            <li><a href="#what-we-offer" class="nav-link">What We Offer</a></li>
+            <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+            <li><a href="#platforms" class="nav-link">Platforms</a></li>
+            <li><a href="#contact" class="nav-link">Contact</a></li>
+        </ul>
+        <button class="nav-mobile-toggle" id="mobileToggle" aria-label="Toggle menu">
+            <svg class="nav-mobile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
         <div class="nav-mobile-menu" id="mobileMenu">
             <a href="#what-we-offer" class="nav-mobile-link">What We Offer</a>
             <a href="#how-it-works" class="nav-mobile-link">How It Works</a>
@@ -857,10 +766,6 @@
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
             </a>
-        </div>
-        <div class="scroll-hint">
-            <span>Scroll</span>
-            <div class="scroll-line"></div>
         </div>
     </section>
 
@@ -1014,30 +919,6 @@
         </div>
     </section>
 
-    <!-- Trust Section -->
-    <section class="section trust-section">
-        <div class="section-container">
-            <div class="trust-content">
-                <p class="trust-quote">"ReplyGuyz transformed how we think about social engagement. They're not just a service—they're an extension of our team."</p>
-                <div class="trust-line"></div>
-                <div class="trust-badges">
-                    <div class="trust-badge">
-                        <div class="trust-badge-number">500+</div>
-                        <div class="trust-badge-label">Brands Worldwide</div>
-                    </div>
-                    <div class="trust-badge">
-                        <div class="trust-badge-number">&lt;5min</div>
-                        <div class="trust-badge-label">Response Time</div>
-                    </div>
-                    <div class="trust-badge">
-                        <div class="trust-badge-number">99.9%</div>
-                        <div class="trust-badge-label">Uptime</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- Contact Section -->
     <section class="section" id="contact">
         <div class="section-container">
@@ -1139,11 +1020,7 @@
             y: 0,
             opacity: 1,
             duration: 0.8
-        }, '-=0.5')
-        .to('.scroll-hint', {
-            opacity: 1,
-            duration: 0.8
-        }, '-=0.3');
+        }, '-=0.5');
         
         // Offer Cards - Quick, snappy reveal
         gsap.utils.toArray('.offer-card').forEach((card, i) => {
@@ -1192,46 +1069,6 @@
                     toggleActions: 'play none none none'
                 },
                 delay: i * 0.04
-            });
-        });
-        
-        // Trust Section - Quick reveal
-        gsap.to('.trust-quote', {
-            y: 0,
-            opacity: 1,
-            duration: 0.5,
-            ease: "power2.out",
-            scrollTrigger: {
-                trigger: '.trust-quote',
-                start: 'top 90%',
-                toggleActions: 'play none none none'
-            }
-        });
-        
-        gsap.to('.trust-line', {
-            scaleX: 1,
-            duration: 0.4,
-            ease: "power2.out",
-            scrollTrigger: {
-                trigger: '.trust-line',
-                start: 'top 90%',
-                toggleActions: 'play none none none'
-            },
-            delay: 0.2
-        });
-        
-        gsap.utils.toArray('.trust-badge').forEach((badge, i) => {
-            gsap.to(badge, {
-                y: 0,
-                opacity: 1,
-                duration: 0.35,
-                ease: "power2.out",
-                scrollTrigger: {
-                    trigger: badge,
-                    start: 'top 95%',
-                    toggleActions: 'play none none none'
-                },
-                delay: i * 0.06
             });
         });
         
