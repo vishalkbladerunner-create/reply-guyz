@@ -647,14 +647,8 @@
 
         .process-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 1.25rem;
-        }
-
-        @media (max-width: 640px) {
-            .process-row {
-                grid-template-columns: 1fr;
-            }
         }
 
         .process-item {
@@ -1467,6 +1461,13 @@
                 gap: 0.75rem;
             }
 
+            /* Mobile order: X, Telegram, LinkedIn, CoinMarketCap, On Request */
+            .platform-card[data-platform="twitter"] { order: 1; }
+            .platform-card[data-platform="custom"] { order: 2; }
+            .platform-card[data-platform="linkedin"] { order: 3; }
+            .platform-card[data-platform="cmc"] { order: 4; }
+            .platform-card[data-platform="instagram"] { order: 5; }
+
             .platform-card {
                 width: 100%;
                 max-width: 400px;
@@ -1746,14 +1747,6 @@
                                 creates the social proof that triggers real organic growth.</p>
                         </div>
                     </div>
-                    <div class="process-item">
-                        <div class="process-number">06</div>
-                        <div class="process-content">
-                            <h3>Weekly Report</h3>
-                            <p>Every Monday you receive a clear report. Views, engagement, follower growth, top post.
-                                Full visibility always.</p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1947,6 +1940,13 @@
                     </svg>
                     <h3>Telegram</h3>
                     <p>@vivek1857</p>
+                </a>
+                <a href="https://x.com/reply_guyz_" class="contact-card" target="_blank" rel="noopener noreferrer">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <h3>X (Twitter)</h3>
+                    <p>@reply_guyz_</p>
                 </a>
                 <a href="mailto:vivik1857@gmail.com" class="contact-card">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
