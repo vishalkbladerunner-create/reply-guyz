@@ -1,20 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ReplyGuyz — Real People. Real Reach.</title>
-    <meta name="description" content="Authentic engagement that converts. We place your brand in the conversations that matter.">
-    
+    <meta name="description"
+        content="Authentic engagement that converts. We place your brand in the conversations that matter.">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap"
+        rel="stylesheet">
+
     <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    
+
     <style>
         :root {
             /* Color palette from image - soft, premium, approachable */
@@ -31,34 +35,34 @@
             --text-secondary: #5a6578;
             --text-muted: #8b95a5;
             --border: rgba(26, 35, 50, 0.08);
-            
+
             /* Typography */
             --font-display: 'Playfair Display', Georgia, serif;
             --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            
+
             /* Easing - smooth, satisfying */
             --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
             --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
             --ease-in-out-smooth: cubic-bezier(0.65, 0, 0.35, 1);
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         html {
             scroll-behavior: smooth;
         }
-        
+
         @media (prefers-reduced-motion: reduce) {
             * {
                 animation-duration: 0.01ms !important;
                 transition-duration: 0.01ms !important;
             }
         }
-        
+
         body {
             font-family: var(--font-body);
             font-weight: 400;
@@ -68,7 +72,7 @@
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
         }
-        
+
         /* Navigation */
         .nav {
             position: fixed;
@@ -80,15 +84,17 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: background 0.4s var(--ease-smooth), backdrop-filter 0.4s var(--ease-smooth);
+            transition: padding 0.4s var(--ease-smooth);
         }
-        
-        .nav.scrolled {
-            background: rgba(248, 246, 241, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+
+        @media (max-width: 767px) {
+            .nav.scrolled {
+                background: rgba(248, 246, 241, 0.85);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+            }
         }
-        
+
         .nav-logo {
             font-family: var(--font-display);
             font-size: 1.5rem;
@@ -97,13 +103,25 @@
             text-decoration: none;
             letter-spacing: -0.02em;
         }
-        
+
         .nav-links {
             display: flex;
             gap: 2.5rem;
             list-style: none;
+
+            position: absolute;
+            top: 50%;
+            right: 3rem;
+
+            padding: 0.5rem;
+            box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+            background: rgba(255, 255, 255, 0);
+            border: 1px solid rgba(255, 255, 255, 0);
+            border-radius: 100px;
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
         }
-        
+
         .nav-links a {
             font-size: 0.875rem;
             font-weight: 500;
@@ -112,7 +130,7 @@
             transition: color 0.3s var(--ease-smooth);
             position: relative;
         }
-        
+
         .nav-links a::after {
             content: '';
             position: absolute;
@@ -123,15 +141,15 @@
             background: var(--blue-accent);
             transition: width 0.3s var(--ease-out-expo);
         }
-        
+
         .nav-links a:hover {
             color: var(--navy);
         }
-        
+
         .nav-links a:hover::after {
             width: 100%;
         }
-        
+
         /* Hero - Clean, centered, minimalist */
         .hero {
             min-height: 100vh;
@@ -144,13 +162,13 @@
             position: relative;
             background: var(--cream);
         }
-        
+
         .hero-content {
             max-width: 900px;
             position: relative;
             z-index: 1;
         }
-        
+
         .hero-tagline {
             font-family: var(--font-display);
             font-size: clamp(2.5rem, 8vw, 5.5rem);
@@ -160,23 +178,23 @@
             color: var(--navy);
             margin-bottom: 1.5rem;
         }
-        
+
         .hero-tagline .line {
             display: block;
             overflow: hidden;
         }
-        
+
         .hero-tagline .word {
             display: inline-block;
             transform: translateY(100%);
             opacity: 0;
         }
-        
+
         .hero-tagline .italic {
             font-style: italic;
             color: var(--blue-accent);
         }
-        
+
         .hero-subtext {
             font-size: clamp(1rem, 1.5vw, 1.25rem);
             color: var(--text-secondary);
@@ -186,16 +204,16 @@
             opacity: 0;
             transform: translateY(20px);
         }
-        
+
         .hero-cta {
             display: inline-flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 1rem 2rem;
-            background: var(--navy);
+            gap: 1rem;
+            padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+            background: #000000;
             color: var(--white);
-            font-size: 0.875rem;
-            font-weight: 500;
+            font-size: 1.125rem;
+            font-weight: 400;
             letter-spacing: 0.02em;
             text-decoration: none;
             border-radius: 100px;
@@ -203,23 +221,166 @@
             opacity: 0;
             transform: translateY(20px);
         }
-        
+
         .hero-cta:hover {
-            background: var(--navy-light);
             transform: translateY(-2px);
-            box-shadow: 0 10px 40px rgba(26, 35, 50, 0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
         }
-        
-        .hero-cta svg {
-            width: 16px;
-            height: 16px;
-            transition: transform 0.3s var(--ease-smooth);
+
+        .hero-cta-secondary {
+            padding: 0.875rem 2rem !important;
+            background: transparent !important;
+            border: 1px solid rgba(26, 35, 50, 0.3) !important;
+            color: var(--navy) !important;
         }
-        
-        .hero-cta:hover svg {
-            transform: translateX(4px);
+
+        .hero-cta-secondary:hover {
+            background: rgba(26, 35, 50, 0.05) !important;
         }
-        
+
+        .cta-text {
+            display: flex;
+        }
+
+        .char-wrap {
+            position: relative;
+            display: inline-block;
+            overflow: hidden;
+        }
+
+        .char-original,
+        .char-hover {
+            display: inline-block;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .char-hover {
+            position: absolute;
+            left: 0;
+            top: 100%;
+        }
+
+        .hero-cta:hover .char-original {
+            transform: translateY(-100%);
+        }
+
+        .hero-cta:hover .char-hover {
+            transform: translateY(-100%);
+        }
+
+        .char-wrap:nth-child(1) .char-original,
+        .char-wrap:nth-child(1) .char-hover {
+            transition-delay: 0.00s;
+        }
+
+        .char-wrap:nth-child(2) .char-original,
+        .char-wrap:nth-child(2) .char-hover {
+            transition-delay: 0.04s;
+        }
+
+        .char-wrap:nth-child(3) .char-original,
+        .char-wrap:nth-child(3) .char-hover {
+            transition-delay: 0.08s;
+        }
+
+        .char-wrap:nth-child(4) .char-original,
+        .char-wrap:nth-child(4) .char-hover {
+            transition-delay: 0.12s;
+        }
+
+        .char-wrap:nth-child(5) .char-original,
+        .char-wrap:nth-child(5) .char-hover {
+            transition-delay: 0.16s;
+        }
+
+        .char-wrap:nth-child(6) .char-original,
+        .char-wrap:nth-child(6) .char-hover {
+            transition-delay: 0.20s;
+        }
+
+        .char-wrap:nth-child(7) .char-original,
+        .char-wrap:nth-child(7) .char-hover {
+            transition-delay: 0.24s;
+        }
+
+        .char-wrap:nth-child(8) .char-original,
+        .char-wrap:nth-child(8) .char-hover {
+            transition-delay: 0.28s;
+        }
+
+        .char-wrap:nth-child(9) .char-original,
+        .char-wrap:nth-child(9) .char-hover {
+            transition-delay: 0.32s;
+        }
+
+        .char-wrap:nth-child(10) .char-original,
+        .char-wrap:nth-child(10) .char-hover {
+            transition-delay: 0.36s;
+        }
+
+        .char-wrap:nth-child(11) .char-original,
+        .char-wrap:nth-child(11) .char-hover {
+            transition-delay: 0.40s;
+        }
+
+        .char-wrap:nth-child(12) .char-original,
+        .char-wrap:nth-child(12) .char-hover {
+            transition-delay: 0.44s;
+        }
+
+        .char-wrap:nth-child(13) .char-original,
+        .char-wrap:nth-child(13) .char-hover {
+            transition-delay: 0.48s;
+        }
+
+        .char-wrap:nth-child(14) .char-original,
+        .char-wrap:nth-child(14) .char-hover {
+            transition-delay: 0.52s;
+        }
+
+        .char-wrap:nth-child(15) .char-original,
+        .char-wrap:nth-child(15) .char-hover {
+            transition-delay: 0.56s;
+        }
+
+        .cta-arrow-wrapper {
+            position: relative;
+            width: 2.75rem;
+            height: 2.75rem;
+            background: var(--white);
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .cta-arrow-original,
+        .cta-arrow-hover {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cta-arrow-original {
+            transform: translateX(0);
+        }
+
+        .cta-arrow-hover {
+            transform: translateX(-250%);
+        }
+
+        .hero-cta:hover .cta-arrow-original {
+            transform: translateX(250%);
+        }
+
+        .hero-cta:hover .cta-arrow-hover {
+            transform: translateX(0);
+        }
+
         /* Sections - Full viewport, appearing one by one */
         .section {
             min-height: 100vh;
@@ -228,27 +389,26 @@
             justify-content: center;
             padding: 6rem 2rem;
             position: relative;
-        }
-        
-        .section:nth-child(odd) {
-            background: var(--cream-dark);
-        }
-        
-        .section:nth-child(even) {
             background: var(--cream);
         }
-        
+
+        /* Stacking scroll: wrapper provides extra scroll space for the sticky section inside */
+        .stack-scroll-wrapper {
+            /* Height is set by JS: section natural height + enough scroll space for next section to slide in */
+            position: relative;
+        }
+
         .section-container {
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
         }
-        
+
         .section-header {
             text-align: center;
             margin-bottom: 4rem;
         }
-        
+
         .section-number {
             font-size: 0.75rem;
             font-weight: 600;
@@ -258,7 +418,7 @@
             margin-bottom: 1rem;
             display: block;
         }
-        
+
         .section-title {
             font-family: var(--font-display);
             font-size: clamp(2rem, 5vw, 3.5rem);
@@ -267,25 +427,25 @@
             letter-spacing: -0.02em;
             color: var(--navy);
         }
-        
+
         .section-title em {
             font-style: italic;
             color: var(--blue-accent);
         }
-        
+
         /* What We Offer - Bento Grid */
         .offer-intro {
             max-width: 700px;
             margin: 0 auto 4rem;
             text-align: center;
         }
-        
+
         .offer-intro p {
             font-size: clamp(1.125rem, 2vw, 1.375rem);
             color: var(--text-secondary);
             line-height: 1.7;
         }
-        
+
         /* Offer Grid - Responsive */
         .offer-grid {
             display: grid;
@@ -294,26 +454,20 @@
             max-width: 1200px;
             margin: 0 auto;
         }
-        
+
         @media (min-width: 768px) {
             .offer-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
-        
+
         @media (min-width: 1024px) {
             .offer-grid {
-                grid-template-columns: repeat(3, 1fr);
-                grid-template-rows: repeat(2, 280px);
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: auto;
             }
-            
-            .offer-card:nth-child(1) { grid-column: 1; grid-row: 1; }
-            .offer-card:nth-child(2) { grid-column: 1; grid-row: 2; }
-            .offer-card:nth-child(3) { grid-column: 2; grid-row: 1 / 3; min-height: 100%; }
-            .offer-card:nth-child(4) { grid-column: 3; grid-row: 1; }
-            .offer-card:nth-child(5) { grid-column: 3; grid-row: 2; }
         }
-        
+
         .offer-card {
             position: relative;
             border-radius: 20px;
@@ -329,23 +483,23 @@
             transition: transform 0.3s ease;
             cursor: pointer;
         }
-        
+
         @media (min-width: 768px) {
             .offer-card {
                 min-height: 260px;
             }
         }
-        
+
         .offer-card:hover {
             transform: scale(1.02);
         }
-        
+
         .offer-card-bg {
             position: absolute;
             inset: 0;
             z-index: 0;
         }
-        
+
         .offer-card-bg::after {
             content: '';
             position: absolute;
@@ -353,24 +507,24 @@
             background: rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
         }
-        
+
         .offer-card:hover .offer-card-bg::after {
             background: rgba(0, 0, 0, 0.3);
         }
-        
+
         .offer-card-bg img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
+
         .offer-card-content {
             position: relative;
             z-index: 1;
             text-align: center;
             width: 100%;
         }
-        
+
         .offer-card h3 {
             font-family: var(--font-display);
             font-size: clamp(1.25rem, 3vw, 1.75rem);
@@ -379,14 +533,14 @@
             margin-bottom: 1rem;
             line-height: 1.2;
         }
-        
+
         .offer-tags {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 0.5rem;
         }
-        
+
         .offer-tag {
             padding: 0.375rem 0.875rem;
             background: rgba(255, 255, 255, 0.15);
@@ -398,22 +552,28 @@
             border-radius: 100px;
             border: 1px solid rgba(255, 255, 255, 0.15);
         }
-        
-        /* Process Section - Responsive */
-        .process-list {
+
+        /* Process Section - 2-col grid */
+        .process-grid {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            max-width: 800px;
+            gap: 1.25rem;
+            max-width: 1000px;
             margin: 0 auto;
         }
-        
-        @media (min-width: 768px) {
-            .process-list {
-                gap: 1.5rem;
+
+        .process-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        @media (max-width: 640px) {
+            .process-row {
+                grid-template-columns: 1fr;
             }
         }
-        
+
         .process-item {
             display: flex;
             align-items: flex-start;
@@ -426,19 +586,19 @@
             transform: translateY(40px);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        
+
         @media (min-width: 768px) {
             .process-item {
                 gap: 1.5rem;
                 padding: 2rem;
             }
         }
-        
+
         .process-item:hover {
             transform: translateX(8px);
             box-shadow: 0 8px 32px rgba(26, 35, 50, 0.08);
         }
-        
+
         .process-number {
             width: 40px;
             height: 40px;
@@ -453,7 +613,7 @@
             justify-content: center;
             flex-shrink: 0;
         }
-        
+
         @media (min-width: 768px) {
             .process-number {
                 width: 48px;
@@ -461,7 +621,7 @@
                 font-size: 1.25rem;
             }
         }
-        
+
         .process-content h3 {
             font-family: var(--font-display);
             font-size: 1.125rem;
@@ -469,25 +629,25 @@
             color: var(--navy);
             margin-bottom: 0.5rem;
         }
-        
+
         @media (min-width: 768px) {
             .process-content h3 {
                 font-size: 1.25rem;
             }
         }
-        
+
         .process-content p {
             font-size: 0.875rem;
             color: var(--text-secondary);
             line-height: 1.6;
         }
-        
+
         @media (min-width: 768px) {
             .process-content p {
                 font-size: 0.9375rem;
             }
         }
-        
+
         /* Stats Section - Responsive */
         .stats-grid {
             display: grid;
@@ -496,20 +656,20 @@
             max-width: 1000px;
             margin: 0 auto;
         }
-        
+
         @media (min-width: 768px) {
             .stats-grid {
                 grid-template-columns: repeat(4, 1fr);
                 gap: 2rem;
             }
         }
-        
+
         .stat-item {
             text-align: center;
             opacity: 0;
             transform: scale(0.9);
         }
-        
+
         .stat-number {
             font-family: var(--font-display);
             font-size: clamp(2rem, 5vw, 4rem);
@@ -518,13 +678,13 @@
             line-height: 1;
             margin-bottom: 0.5rem;
         }
-        
+
         .stat-label {
             font-size: 0.875rem;
             color: var(--text-secondary);
             letter-spacing: 0.05em;
         }
-        
+
         /* Platforms Section - Responsive */
         .platforms-grid {
             display: grid;
@@ -533,21 +693,21 @@
             max-width: 800px;
             margin: 0 auto;
         }
-        
+
         @media (min-width: 640px) {
             .platforms-grid {
                 grid-template-columns: repeat(3, 1fr);
                 gap: 1rem;
             }
         }
-        
+
         @media (min-width: 1024px) {
             .platforms-grid {
-                grid-template-columns: repeat(4, 1fr);
-                max-width: 1000px;
+                grid-template-columns: repeat(5, 1fr);
+                max-width: 1100px;
             }
         }
-        
+
         .platform-item {
             background: var(--white);
             padding: 1.5rem 0.75rem;
@@ -563,26 +723,26 @@
             justify-content: center;
             min-height: 120px;
         }
-        
+
         @media (min-width: 768px) {
             .platform-item {
                 padding: 2rem 1rem;
                 min-height: 140px;
             }
         }
-        
+
         .platform-item:hover {
             transform: translateY(-6px);
             box-shadow: 0 8px 24px rgba(26, 35, 50, 0.08);
         }
-        
+
         .platform-item svg {
             width: 28px;
             height: 28px;
             color: var(--navy);
             margin-bottom: 0.5rem;
         }
-        
+
         @media (min-width: 768px) {
             .platform-item svg {
                 width: 32px;
@@ -590,14 +750,14 @@
                 margin-bottom: 0.75rem;
             }
         }
-        
+
         .platform-item span {
             display: block;
             font-size: clamp(0.75rem, 2vw, 0.875rem);
             font-weight: 500;
             color: var(--navy);
         }
-        
+
         /* Contact Section - Responsive */
         .contact-grid {
             display: grid;
@@ -606,19 +766,19 @@
             max-width: 600px;
             margin: 0 auto;
         }
-        
+
         @media (max-width: 480px) {
             .contact-grid {
                 grid-template-columns: 1fr;
             }
         }
-        
+
         @media (min-width: 768px) {
             .contact-grid {
                 gap: 1.5rem;
             }
         }
-        
+
         .contact-card {
             background: var(--white);
             padding: 2rem 1.5rem;
@@ -631,18 +791,18 @@
             transform: translateY(30px);
             transition: all 0.3s ease;
         }
-        
+
         @media (min-width: 768px) {
             .contact-card {
                 padding: 2.5rem;
             }
         }
-        
+
         .contact-card:hover {
             transform: translateY(-6px);
             box-shadow: 0 12px 40px rgba(26, 35, 50, 0.1);
         }
-        
+
         .contact-card svg {
             width: 32px;
             height: 32px;
@@ -650,96 +810,493 @@
             margin-bottom: 1rem;
             transition: transform 0.3s ease;
         }
-        
+
         @media (min-width: 768px) {
             .contact-card svg {
                 width: 40px;
                 height: 40px;
             }
         }
-        
+
         .contact-card:hover svg {
             transform: scale(1.1);
         }
-        
+
         .contact-card h3 {
             font-family: var(--font-display);
             font-size: 1.125rem;
             font-weight: 500;
             margin-bottom: 0.5rem;
         }
-        
+
         @media (min-width: 768px) {
             .contact-card h3 {
                 font-size: 1.25rem;
             }
         }
-        
+
         .contact-card p {
             font-size: 0.875rem;
             color: var(--text-secondary);
         }
-        
+
         @media (min-width: 768px) {
             .contact-card p {
                 font-size: 0.9375rem;
             }
         }
-        
+
         /* Footer */
         .footer {
             padding: 3rem 2rem;
             background: var(--navy);
             text-align: center;
         }
-        
+
         .footer-logo {
             font-family: var(--font-display);
             font-size: 1.5rem;
             color: var(--white);
             margin-bottom: 0.5rem;
         }
-        
+
         .footer-tagline {
             font-style: italic;
             color: rgba(255, 255, 255, 0.5);
             font-size: 0.9375rem;
         }
-        
+
         /* Mobile Navigation */
         @media (max-width: 767px) {
             .nav-links {
                 display: none;
             }
         }
-        
+
         @media (min-width: 768px) {
             .nav-mobile-toggle {
                 display: none;
             }
+
             .nav-mobile-menu {
                 display: none !important;
             }
         }
+
+        .trust-card {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            padding: 3rem 2.25rem;
+            min-height: 340px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1;
+        }
+
+        .trust-card-bg {
+            position: absolute;
+            inset: 0;
+            z-index: -2;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .trust-card-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            background: rgba(255, 255, 255, 0.9);
+            transition: background 0.4s ease;
+        }
+
+        @supports (backdrop-filter: blur(5px)) or (-webkit-backdrop-filter: blur(5px)) {
+            .trust-card-overlay {
+                background: rgba(255, 255, 255, 0.85);
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+                transition: background 0.4s ease, backdrop-filter 0.4s ease, -webkit-backdrop-filter 0.4s ease;
+            }
+
+            .trust-card:hover .trust-card-overlay {
+                background: rgba(26, 35, 50, 0.75);
+                backdrop-filter: blur(0px);
+                -webkit-backdrop-filter: blur(0px);
+            }
+        }
+
+        @supports not ((backdrop-filter: blur(5px)) or (-webkit-backdrop-filter: blur(5px))) {
+            .trust-card:hover .trust-card-overlay {
+                background: rgba(26, 35, 50, 0.85);
+            }
+        }
+
+        .trust-card:hover .trust-card-bg {
+            transform: scale(1.08);
+        }
+
+        .trust-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.1);
+        }
+
+        .trust-card h3,
+        .trust-card p {
+            position: relative;
+            z-index: 2;
+            transition: color 0.4s ease;
+        }
+
+        .trust-card h3 {
+            color: var(--navy);
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .trust-card p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            line-height: 1.7;
+            margin: 0;
+            max-width: 320px;
+        }
+
+        .trust-card:hover h3,
+        .trust-card:hover p {
+            color: var(--white) !important;
+        }
+
+        .trust-card-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .trust-card-icon svg {
+            width: 26px;
+            height: 26px;
+            color: var(--navy);
+            transition: all 0.4s ease;
+        }
+
+        .trust-card:hover .trust-card-icon {
+            background: var(--white);
+            transform: scale(1.1) rotate(-4deg);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .trust-card:hover .trust-card-icon svg {
+            color: var(--navy);
+        }
+
+        .platform-pin-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            margin: 2rem auto 0;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            gap: 1rem;
+            min-height: 280px;
+            perspective: 1000px;
+        }
+
+        .platform-card {
+            flex: 1;
+            min-width: 0;
+            background: var(--white);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border-radius: 20px;
+            padding: 1.75rem 1.5rem;
+            min-height: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            will-change: transform, opacity;
+            opacity: 0;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            gap: 0.75rem;
+        }
+
+        /* Colored accent bar at top */
+        .platform-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--brand, var(--navy));
+            transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Glow effect */
+        .platform-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(180deg, var(--brand-glow, rgba(26, 35, 50, 0.03)) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .platform-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+        }
+
+        .platform-card:hover::before {
+            height: 6px;
+        }
+
+        .platform-card:hover::after {
+            opacity: 1;
+        }
+
+        /* Icon container */
+        .platform-icon-wrap {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--brand-bg, rgba(26, 35, 50, 0.05));
+            margin-bottom: 0.5rem;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            flex-shrink: 0;
+        }
+
+        .platform-icon-wrap svg {
+            width: 24px !important;
+            height: 24px !important;
+        }
+
+        .platform-card:hover .platform-icon-wrap {
+            transform: scale(1.08) rotate(-4deg);
+            box-shadow: 0 8px 24px var(--brand-shadow, rgba(26, 35, 50, 0.15));
+        }
+
+        .platform-card h3 {
+            font-size: 1.1rem !important;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+
+
+        .platform-card p {
+            font-size: 0.875rem !important;
+            line-height: 1.55;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        /* Platform-specific brand colors */
+        .platform-card[data-platform="cmc"] {
+            --brand: #17C784;
+            --brand-bg: rgba(23, 199, 132, 0.08);
+            --brand-glow: rgba(23, 199, 132, 0.15);
+            --brand-shadow: rgba(23, 199, 132, 0.25);
+        }
+
+        .platform-card[data-platform="instagram"] {
+            --brand: #C13584;
+            --brand-bg: rgba(193, 53, 132, 0.08);
+            --brand-glow: rgba(193, 53, 132, 0.15);
+            --brand-shadow: rgba(193, 53, 132, 0.25);
+        }
+
+        .platform-card[data-platform="twitter"] {
+            --brand: #000000;
+            --brand-bg: rgba(0, 0, 0, 0.06);
+            --brand-glow: rgba(0, 0, 0, 0.1);
+            --brand-shadow: rgba(0, 0, 0, 0.2);
+        }
+
+        .platform-card[data-platform="linkedin"] {
+            --brand: #0A66C2;
+            --brand-bg: rgba(10, 102, 194, 0.08);
+            --brand-glow: rgba(10, 102, 194, 0.15);
+            --brand-shadow: rgba(10, 102, 194, 0.25);
+        }
+
+        .platform-card[data-platform="custom"] {
+            --brand: #6366F1;
+            --brand-bg: rgba(99, 102, 241, 0.08);
+            --brand-glow: rgba(99, 102, 241, 0.15);
+            --brand-shadow: rgba(99, 102, 241, 0.25);
+        }
+
+        /* Feature tags */
+        .platform-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: 0.75rem;
+        }
+
+        .platform-feature-tag {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--brand, var(--navy));
+            background: var(--brand-bg, rgba(26, 35, 50, 0.05));
+            padding: 0.22rem 0.55rem;
+            border-radius: 100px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .platform-card:hover .platform-feature-tag {
+            transform: translateY(-2px);
+        }
+
+        /* Section background pattern */
+        #platforms::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(23, 199, 132, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(193, 53, 132, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(10, 102, 194, 0.02) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+        @media (max-width: 1024px) {
+            .platform-pin-wrapper {
+                flex-direction: column;
+                height: auto;
+                min-height: auto;
+                gap: 0.75rem;
+            }
+
+            .platform-card {
+                width: 100%;
+                max-width: 400px;
+                margin: 0 auto;
+                min-height: auto;
+                padding: 1.25rem 1.5rem;
+                opacity: 1;
+                transform: none !important;
+                flex-direction: row;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            .platform-card::before {
+                left: 0;
+                top: 0;
+                bottom: 0;
+                right: auto;
+                width: 4px;
+                height: 100% !important;
+            }
+
+            .platform-card:hover::before {
+                width: 6px;
+            }
+
+            .platform-icon-wrap {
+                width: 44px;
+                height: 44px;
+                margin-bottom: 0;
+                flex-shrink: 0;
+            }
+
+            .platform-icon-wrap svg {
+                width: 22px !important;
+                height: 22px !important;
+            }
+
+            .platform-card-content {
+                flex: 1;
+            }
+
+            .platform-features {
+                margin-top: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .platform-card {
+                padding: 1rem 1.25rem;
+                gap: 0.875rem;
+            }
+
+            .platform-icon-wrap {
+                width: 40px;
+                height: 40px;
+            }
+
+            .platform-icon-wrap svg {
+                width: 20px !important;
+                height: 20px !important;
+            }
+
+            .platform-card h3 {
+                font-size: 1rem !important;
+                margin-bottom: 0.35rem;
+            }
+
+            .platform-card p {
+                font-size: 0.8rem !important;
+                line-height: 1.5;
+            }
+
+            .platform-feature-tag {
+                font-size: 0.65rem;
+                padding: 0.2rem 0.5rem;
+            }
+        }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="nav" id="nav">
         <a href="#" class="nav-logo">ReplyGuyz</a>
         <ul class="nav-links">
-            <li><a href="#what-we-offer" class="nav-link">What We Offer</a></li>
+            <li><a href="#why-us" class="nav-link">Why Us</a></li>
             <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
             <li><a href="#platforms" class="nav-link">Platforms</a></li>
             <li><a href="#contact" class="nav-link">Contact</a></li>
         </ul>
         <button class="nav-mobile-toggle" id="mobileToggle" aria-label="Toggle menu">
             <svg class="nav-mobile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 6h16M4 12h16M4 18h16"/>
+                <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>
         </button>
         <div class="nav-mobile-menu" id="mobileMenu">
-            <a href="#what-we-offer" class="nav-mobile-link">What We Offer</a>
+            <a href="#why-us" class="nav-mobile-link">Why Us</a>
             <a href="#how-it-works" class="nav-mobile-link">How It Works</a>
             <a href="#platforms" class="nav-mobile-link">Platforms</a>
             <a href="#contact" class="nav-mobile-link">Contact</a>
@@ -751,6 +1308,10 @@
         <div class="hero-content">
             <h1 class="hero-tagline">
                 <span class="line">
+                    <span class="word">Your</span>
+                    <span class="word">Brand.</span>
+                </span>
+                <span class="line">
                     <span class="word">Real</span>
                     <span class="word">People.</span>
                 </span>
@@ -759,124 +1320,172 @@
                     <span class="word italic">Reach.</span>
                 </span>
             </h1>
-            <p class="hero-subtext">We place your brand in the conversations that matter. Authentic engagement, real results, zero guesswork.</p>
-            <a href="#what-we-offer" class="hero-cta">
-                Explore What We Do
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-            </a>
+            <p class="hero-subtext">We grow your social presence using real, verified humans — not bots, not automation,
+                not shortcuts.</p>
+            <div class="hero-cta-group" style="display: flex; gap: 1rem; align-items: center;">
+                <a href="#contact" class="hero-cta">
+                    <span class="cta-text">
+                        <span class="char-wrap"><span class="char-original">G</span><span
+                                class="char-hover">G</span></span><span class="char-wrap"><span
+                                class="char-original">e</span><span class="char-hover">e</span></span><span
+                            class="char-wrap"><span class="char-original">t</span><span
+                                class="char-hover">t</span></span><span class="char-wrap"><span
+                                class="char-original">&nbsp;</span><span class="char-hover">&nbsp;</span></span><span
+                            class="char-wrap"><span class="char-original">S</span><span
+                                class="char-hover">S</span></span><span class="char-wrap"><span
+                                class="char-original">t</span><span class="char-hover">t</span></span><span
+                            class="char-wrap"><span class="char-original">a</span><span
+                                class="char-hover">a</span></span><span class="char-wrap"><span
+                                class="char-original">r</span><span class="char-hover">r</span></span><span
+                            class="char-wrap"><span class="char-original">t</span><span
+                                class="char-hover">t</span></span><span class="char-wrap"><span
+                                class="char-original">e</span><span class="char-hover">e</span></span><span
+                            class="char-wrap"><span class="char-original">d</span><span
+                                class="char-hover">d</span></span>
+                    </span>
+                    <span class="cta-arrow-wrapper">
+                        <svg class="cta-arrow-original" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                        <svg class="cta-arrow-hover" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </span>
+                </a>
+                <a href="#how-it-works" class="hero-cta hero-cta-secondary">
+                    <span class="cta-text">See How It Works</span>
+                </a>
+            </div>
         </div>
     </section>
 
-    <!-- What We Offer Section -->
-    <section class="section" id="what-we-offer">
+    <!-- Stats Section -->
+    <section class="section" id="stats"
+        style="min-height: auto; padding: 2.5rem 2rem; background: var(--navy); color: var(--white);">
         <div class="section-container">
-            <div class="offer-intro">
-                <p>End-to-end engagement systems that generate leads, build communities, and scale your brand presence — built and managed by a team that's done it across hundreds of companies.</p>
+            <div class="stats-grid"
+                style="display: grid; gap: 2rem; max-width: 1000px; margin: 0 auto; text-align: center;">
+                <div class="stat-item" style="opacity:1; transform:scale(1);">
+                    <div class="stat-number" style="color:var(--white);">100%</div>
+                    <div class="stat-label">Real Operators</div>
+                </div>
+                <div class="stat-item" style="opacity:1; transform:scale(1);">
+                    <div class="stat-number" style="color:var(--white);">5+</div>
+                    <div class="stat-label">Platforms</div>
+                </div>
+                <div class="stat-item" style="opacity:1; transform:scale(1);">
+                    <div class="stat-number" style="color:var(--white);">24/7</div>
+                    <div class="stat-label">Activity</div>
+                </div>
+                <div class="stat-item" style="opacity:1; transform:scale(1);">
+                    <div class="stat-number" style="color:var(--white);">0</div>
+                    <div class="stat-label">Bots</div>
+                </div>
             </div>
-            <div class="offer-grid">
-                <div class="offer-card">
-                    <div class="offer-card-bg">
-                        <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop" alt="Authentic Engagement" loading="lazy">
-                    </div>
-                    <div class="offer-card-content">
-                        <h3>Authentic Engagement</h3>
-                        <div class="offer-tags">
-                            <span class="offer-tag">Human-Written</span>
-                            <span class="offer-tag">Real-Time</span>
-                            <span class="offer-tag">Brand Voice</span>
-                        </div>
-                    </div>
+        </div>
+    </section>
+
+    <!-- Why Us Section -->
+    <section class="section" id="why-us" data-stack>
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-number">01</span>
+                <h2 class="section-title">Built different. <em>By design.</em></h2>
+            </div>
+            <div class="offer-grid"
+                style="grid-template-columns: repeat(2, 1fr); grid-template-rows: auto; max-width: 1000px;">
+                <div class="offer-card"
+                    style="background:var(--white); box-shadow: 0 4px 24px rgba(0,0,0,0.04); padding: 2rem; align-items:flex-start; text-align:left;">
+                    <h3 style="color:var(--navy); font-size:1.25rem;">X Verified Operators</h3>
+                    <p style="color:var(--text-secondary); font-size:0.95rem;">We use accounts with the X blue tick.
+                        Verified accounts carry more weight with the algorithm and look credible to real audiences.</p>
                 </div>
-                <div class="offer-card">
-                    <div class="offer-card-bg">
-                        <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop" alt="Targeted Reach" loading="lazy">
-                    </div>
-                    <div class="offer-card-content">
-                        <h3>Targeted Reach</h3>
-                        <div class="offer-tags">
-                            <span class="offer-tag">Intent Detection</span>
-                            <span class="offer-tag">Audience Match</span>
-                        </div>
-                    </div>
+                <div class="offer-card"
+                    style="background:var(--white); box-shadow: 0 4px 24px rgba(0,0,0,0.04); padding: 2rem; align-items:flex-start; text-align:left;">
+                    <h3 style="color:var(--navy); font-size:1.25rem;">Context Specific Engagement</h3>
+                    <p style="color:var(--text-secondary); font-size:0.95rem;">Every comment is written specifically for
+                        that post. No copy paste. No generic replies. A real person reads it and responds to it.</p>
                 </div>
-                <div class="offer-card">
-                    <div class="offer-card-bg">
-                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=800&fit=crop" alt="Community Building" loading="lazy">
-                    </div>
-                    <div class="offer-card-content">
-                        <h3>Community Building</h3>
-                        <div class="offer-tags">
-                            <span class="offer-tag">Discord Growth</span>
-                            <span class="offer-tag">Telegram Groups</span>
-                            <span class="offer-tag">AMA Sessions</span>
-                            <span class="offer-tag">Event Hosting</span>
-                        </div>
-                    </div>
+                <div class="offer-card"
+                    style="background:var(--white); box-shadow: 0 4px 24px rgba(0,0,0,0.04); padding: 2rem; align-items:flex-start; text-align:left;">
+                    <h3 style="color:var(--navy); font-size:1.25rem;">Globally Distributed</h3>
+                    <p style="color:var(--text-secondary); font-size:0.95rem;">Our operators engage from UK, US, Europe
+                        and Australia. Your engagement looks organic from the right geographies.</p>
                 </div>
-                <div class="offer-card">
-                    <div class="offer-card-bg">
-                        <img src="https://images.unsplash.com/photo-1553877522-43269d4ea984?w=600&h=400&fit=crop" alt="Content Strategy" loading="lazy">
-                    </div>
-                    <div class="offer-card-content">
-                        <h3>Content Strategy</h3>
-                        <div class="offer-tags">
-                            <span class="offer-tag">Thread Writing</span>
-                            <span class="offer-tag">Viral Hooks</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="offer-card">
-                    <div class="offer-card-bg">
-                        <img src="https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&h=400&fit=crop" alt="Analytics & Insights" loading="lazy">
-                    </div>
-                    <div class="offer-card-content">
-                        <h3>Analytics & Insights</h3>
-                        <div class="offer-tags">
-                            <span class="offer-tag">Sentiment Analysis</span>
-                            <span class="offer-tag">ROI Tracking</span>
-                        </div>
-                    </div>
+                <div class="offer-card"
+                    style="background:var(--white); box-shadow: 0 4px 24px rgba(0,0,0,0.04); padding: 2rem; align-items:flex-start; text-align:left;">
+                    <h3 style="color:var(--navy); font-size:1.25rem;">Founder Managed Daily</h3>
+                    <p style="color:var(--text-secondary); font-size:0.95rem;">A dedicated founder reviews quality every
+                        single day. No automated campaigns. No dashboards. Real oversight.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- How It Works Section -->
-    <section class="section" id="how-it-works">
+    <section class="section" id="how-it-works" data-stack>
         <div class="section-container">
             <div class="section-header">
                 <span class="section-number">02</span>
-                <h2 class="section-title">How It <em>Works</em></h2>
+                <h2 class="section-title">Engineered to look exactly like <em>organic.</em></h2>
             </div>
-            <div class="process-list">
-                <div class="process-item">
-                    <div class="process-number">01</div>
-                    <div class="process-content">
-                        <h3>Discovery</h3>
-                        <p>We analyze your brand voice, target audience, and key messaging. Understanding who you are is step one to sounding like you.</p>
+            <div class="process-grid">
+                <!-- Row 1 -->
+                <div class="process-row">
+                    <div class="process-item">
+                        <div class="process-number">01</div>
+                        <div class="process-content">
+                            <h3>You Post. We Activate.</h3>
+                            <p>Within 5 minutes of your post going live our team is already on it.</p>
+                        </div>
+                    </div>
+                    <div class="process-item">
+                        <div class="process-number">02</div>
+                        <div class="process-content">
+                            <h3>Staggered and Natural</h3>
+                            <p>Our operators activate in groups over 2 hours. Likes, then replies, then retweets, then
+                                quote tweets. Exactly how real content spreads.</p>
+                        </div>
                     </div>
                 </div>
-                <div class="process-item">
-                    <div class="process-number">02</div>
-                    <div class="process-content">
-                        <h3>Monitoring</h3>
-                        <p>Our systems scan millions of conversations across platforms in real-time, identifying opportunities that match your criteria.</p>
+                <!-- Row 2 -->
+                <div class="process-row">
+                    <div class="process-item">
+                        <div class="process-number">03</div>
+                        <div class="process-content">
+                            <h3>Algorithm Responds</h3>
+                            <p>The platform sees sustained diverse engagement and starts pushing your content to
+                                audiences beyond your current followers.</p>
+                        </div>
+                    </div>
+                    <div class="process-item">
+                        <div class="process-number">04</div>
+                        <div class="process-content">
+                            <h3>Amplification Chain</h3>
+                            <p>We create multiple layers of content all linking back to you. Quote tweets, reply
+                                threads, fresh commentary. That is how things go viral.</p>
+                        </div>
                     </div>
                 </div>
-                <div class="process-item">
-                    <div class="process-number">03</div>
-                    <div class="process-content">
-                        <h3>Crafting</h3>
-                        <p>Expert writers compose responses that feel natural, helpful, and on-brand. Every word is intentional.</p>
+                <!-- Row 3 -->
+                <div class="process-row">
+                    <div class="process-item">
+                        <div class="process-number">05</div>
+                        <div class="process-content">
+                            <h3>Reach Grows</h3>
+                            <p>More views means more profile visits. More profile visits means more follows. Our team
+                                creates the social proof that triggers real organic growth.</p>
+                        </div>
                     </div>
-                </div>
-                <div class="process-item">
-                    <div class="process-number">04</div>
-                    <div class="process-content">
-                        <h3>Engagement</h3>
-                        <p>We join the conversation at the perfect moment—when interest is high and your input adds real value.</p>
+                    <div class="process-item">
+                        <div class="process-number">06</div>
+                        <div class="process-content">
+                            <h3>Weekly Report</h3>
+                            <p>Every Monday you receive a clear report. Views, engagement, follower growth, top post.
+                                Full visibility always.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -884,107 +1493,365 @@
     </section>
 
     <!-- Platforms Section -->
-    <section class="section" id="platforms">
-        <div class="section-container">
-            <div class="section-header">
+    <section class="section" id="platforms" data-stack style="overflow: hidden; padding-top: 10rem;">
+        <div class="section-container" style="max-width: none;">
+            <div class="section-header" style="position: relative; z-index: 10;">
                 <span class="section-number">03</span>
-                <h2 class="section-title">Where We <em>Operate</em></h2>
+                <h2 class="section-title">Every platform. <em>One team.</em></h2>
             </div>
-            <div class="platforms-grid">
-                <div class="platform-item">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                    </svg>
-                    <span>X / Twitter</span>
+            <div class="platform-pin-wrapper">
+                <!-- Outer Left: CoinMarketCap -->
+                <div class="platform-card platform-card-outer platform-card-ll" data-platform="cmc">
+                    <div class="platform-icon-wrap">
+                        <svg style="width:28px;height:28px;" viewBox="0 0 24 24" fill="#17C784">
+                            <path d="M12 0C5.374 0 0 5.374 0 12s5.374 12 12 12 12-5.374 12-12S18.626 0 12 0zm3.553 14.306c-.135.075-.3.112-.467.103-.453-.028-.783-.44-.824-.891-.11-1.24-.227-2.48-.34-3.72-.023-.25-.075-.35-.155-.35-.079 0-.166.097-.254.288l-1.917 4.15c-.165.36-.467.565-.822.565-.356 0-.658-.204-.822-.565l-1.914-4.148c-.088-.192-.174-.288-.253-.288-.08 0-.132.1-.155.35-.113 1.241-.23 2.482-.34 3.723-.041.452-.37.864-.825.892a.818.818 0 01-.617-.197.835.835 0 01-.273-.587c.15-1.673.301-3.347.453-5.02.07-.77.681-1.337 1.382-1.301.5.025.938.372 1.127.878l1.237 3.387 1.237-3.387c.189-.506.627-.853 1.125-.878.702-.036 1.313.531 1.384 1.301.152 1.673.302 3.347.453 5.02a.839.839 0 01-.22.674z" />
+                        </svg>
+                    </div>
+                    <div class="platform-card-content">
+                        <h3 style="color:var(--navy); font-weight:600;">CoinMarketCap</h3>
+                        <p>Community activity, watchlist adds, and reviews to boost your crypto project's visibility.</p>
+                        <div class="platform-features">
+                            <span class="platform-feature-tag">Watchlist</span>
+                            <span class="platform-feature-tag">Reviews</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="platform-item">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 2.78-1.16 3.35-1.36 3.73-1.36.08.02.27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
-                    </svg>
-                    <span>Telegram</span>
+
+                <!-- Inner Left: Instagram -->
+                <div class="platform-card platform-card-inner platform-card-l" data-platform="instagram">
+                    <div class="platform-icon-wrap">
+                        <svg style="width:28px;height:28px;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <radialGradient id="ig-a" cx="30%" cy="107%" r="150%">
+                                    <stop offset="0%" stop-color="#ffd676" />
+                                    <stop offset="10%" stop-color="#f9a241" />
+                                    <stop offset="28%" stop-color="#f0583b" />
+                                    <stop offset="42%" stop-color="#e3175b" />
+                                    <stop offset="60%" stop-color="#cc2390" />
+                                    <stop offset="75%" stop-color="#a43fbd" />
+                                    <stop offset="88%" stop-color="#7a57d1" />
+                                    <stop offset="100%" stop-color="#5a6fde" />
+                                </radialGradient>
+                            </defs>
+                            <rect x="2" y="2" width="20" height="20" rx="5.5" fill="url(#ig-a)" />
+                            <circle cx="12" cy="12" r="4.5" stroke="white" stroke-width="1.5" fill="none" />
+                            <circle cx="17.2" cy="6.8" r="1.2" fill="white" />
+                        </svg>
+                    </div>
+                    <div class="platform-card-content">
+                        <h3 style="color:var(--navy); font-weight:600;">Instagram</h3>
+                        <p>Authentic engagement through comments, likes, story views, and strategic follows.</p>
+                        <div class="platform-features">
+                            <span class="platform-feature-tag">Stories</span>
+                            <span class="platform-feature-tag">Reels</span>
+                            <span class="platform-feature-tag">DMs</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="platform-item">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                    </svg>
-                    <span>Instagram</span>
+
+                <!-- Center: X (Twitter) -->
+                <div class="platform-card platform-card-center" data-platform="twitter">
+                    <div class="platform-icon-wrap">
+                        <svg style="width:28px;height:28px;" viewBox="0 0 24 24" fill="#000">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                        </svg>
+                    </div>
+                    <div class="platform-card-content">
+                        <h3 style="color:var(--navy); font-weight:600;">X (Twitter)</h3>
+                        <p>Replies, retweets, quote tweets, and specialized content amplification for maximum reach.</p>
+                        <div class="platform-features">
+                            <span class="platform-feature-tag">Replies</span>
+                            <span class="platform-feature-tag">Quotes</span>
+                            <span class="platform-feature-tag">Retweets</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="platform-item">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/>
-                    </svg>
-                    <span>Discord</span>
+
+                <!-- Inner Right: LinkedIn -->
+                <div class="platform-card platform-card-inner platform-card-r" data-platform="linkedin">
+                    <div class="platform-icon-wrap">
+                        <svg style="width:28px;height:28px;" viewBox="0 0 24 24" fill="#0A66C2">
+                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                        </svg>
+                    </div>
+                    <div class="platform-card-content">
+                        <h3 style="color:var(--navy); font-weight:600;">LinkedIn</h3>
+                        <p>Professional engagement through reactions, comments, reposts, and strategic networking.</p>
+                        <div class="platform-features">
+                            <span class="platform-feature-tag">Posts</span>
+                            <span class="platform-feature-tag">Comments</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Outer Right: On Request -->
+                <div class="platform-card platform-card-outer platform-card-rr" data-platform="custom">
+                    <div class="platform-icon-wrap">
+                        <svg style="width:28px;height:28px;" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                    </div>
+                    <div class="platform-card-content">
+                        <h3 style="color:var(--navy); font-weight:600;">On Request</h3>
+                        <p>Telegram, Discord, Reddit and more. Custom platform support available on demand.</p>
+                        <div class="platform-features">
+                            <span class="platform-feature-tag">Telegram</span>
+                            <span class="platform-feature-tag">Discord</span>
+                            <span class="platform-feature-tag">Reddit</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Trust Section -->
+    <section class="section" id="trust" data-stack>
+        <div class="section-container">
+            <div class="section-header" style="max-width: 800px; margin: 0 auto 4rem;">
+                <h2 class="section-title" style="font-size: clamp(1.5rem, 4vw, 2.5rem); line-height: 1.4;">
+                    "We do not sell engagement. We build presence. There is a difference and your audience can feel it."
+                </h2>
+            </div>
+
+            <div class="offer-grid"
+                style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; max-width: 1100px;">
+                <div class="trust-card">
+                    <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&h=400&fit=crop"
+                        class="trust-card-bg" alt="Security" loading="lazy">
+                    <div class="trust-card-overlay"></div>
+                    <div class="trust-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            <path d="M9 12l2 2 4-4"/>
+                        </svg>
+                    </div>
+                    <h3>Zero Risk to Your Account</h3>
+                    <p>Every operator uses their own real device and their own real account. No patterns that platforms can detect.</p>
+                </div>
+                <div class="trust-card">
+                    <img src="https://images.unsplash.com/photo-1557425955-df376b5903c8?w=600&h=400&fit=crop"
+                        class="trust-card-bg" alt="Context" loading="lazy">
+                    <div class="trust-card-overlay"></div>
+                    <div class="trust-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            <path d="M9 10h6"/>
+                            <path d="M12 7v6"/>
+                        </svg>
+                    </div>
+                    <h3>Context Specific Only</h3>
+                    <p>Generic comments do not exist in our operation. Every reply is written for that specific post and that specific audience.</p>
+                </div>
+                <div class="trust-card">
+                    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop"
+                        class="trust-card-bg" alt="Growth" loading="lazy">
+                    <div class="trust-card-overlay"></div>
+                    <div class="trust-card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v20"/>
+                            <path d="M2 12h20"/>
+                            <path d="M4.93 4.93l14.14 14.14"/>
+                            <path d="M19.07 4.93L4.93 19.07"/>
+                        </svg>
+                    </div>
+                    <h3>Built for Long Term Growth</h3>
+                    <p>By month three, real audiences start engaging because they see a genuinely active community, not just numbers.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Contact Section -->
-    <section class="section" id="contact">
+    <section class="section" id="contact" data-stack style="padding: 10rem 2rem 8rem;">
         <div class="section-container">
             <div class="section-header">
                 <span class="section-number">04</span>
-                <h2 class="section-title">Start The <em>Conversation</em></h2>
+                <h2 class="section-title">Ready to grow? <em>Let's talk.</em></h2>
+                <p style="margin-top: 1rem; color: var(--text-secondary); font-size: 1.125rem;">Reach out directly. No
+                    forms, no waiting.</p>
             </div>
             <div class="contact-grid">
                 <a href="https://t.me/vivek1857" class="contact-card" target="_blank" rel="noopener noreferrer">
                     <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 2.78-1.16 3.35-1.36 3.73-1.36.08.02.27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
                     </svg>
                     <h3>Telegram</h3>
                     <p>@vivek1857</p>
                 </a>
-                <a href="mailto:1857vivek@gmail.com" class="contact-card">
+                <a href="mailto:vivik1857@gmail.com" class="contact-card">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                     </svg>
                     <h3>Email</h3>
-                    <p>1857vivek@gmail.com</p>
+                    <p>vivik1857@gmail.com</p>
                 </a>
             </div>
+            <p style="text-align: center; margin-top: 2rem; color: var(--text-muted); font-size: 0.875rem;">We typically
+                respond within a few hours. All conversations are confidential.</p>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-logo">ReplyGuyz</div>
-        <p class="footer-tagline">Real People. Real Reach.</p>
+    <footer class="footer" style="display:flex; flex-direction:column; gap:1rem; padding: 4rem 2rem;">
+        <div
+            style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; max-width:1200px; margin:0 auto; width:100%; color:var(--white);">
+            <div class="footer-logo" style="margin:0;">ReplyGuyz</div>
+            <p class="footer-tagline" style="margin:0; font-style:normal; color:var(--white);">Real People. Real
+                Engagement. Real Results.</p>
+            <p style="margin:0; font-size:0.875rem; color:rgba(255,255,255,0.6);">© ReplyGuyz.com 2026</p>
+        </div>
     </footer>
 
     <script>
         // Register GSAP ScrollTrigger
         gsap.registerPlugin(ScrollTrigger);
-        
+
         // Custom easing - smooth and satisfying
         const smoothEase = "power2.out";
         const expoEase = "expo.out";
-        
-        // Navigation scroll effect
+
+        // Navigation scroll effect (mostly for mobile glassmorphism now)
         const navEl = document.querySelector('.nav');
         window.addEventListener('scroll', () => {
             navEl.classList.toggle('scrolled', window.scrollY > 50);
         }, { passive: true });
-        
+
+        // Scrubbed Pill Navigation Animation for Desktop
+        let mm = gsap.matchMedia();
+        mm.add("(min-width: 768px)", () => {
+            gsap.set('.nav-links', { yPercent: -50, xPercent: 0 });
+
+            gsap.to('.nav-links', {
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "400px top", // Takes 400px of scrolling to fully morph
+                    scrub: 1.5, // 1.5 seconds of smoothing (lag) for organic feel
+                },
+                right: "50%",
+                xPercent: 50,
+                gap: "2rem",
+                paddingTop: "0.75rem",
+                paddingBottom: "0.75rem",
+                paddingLeft: "2rem",
+                paddingRight: "2rem",
+                backgroundColor: "rgba(255, 255, 255, 0.75)",
+                borderColor: "rgba(255, 255, 255, 0.6)",
+                boxShadow: "0 8px 32px rgba(26, 35, 50, 0.08)",
+                backdropFilter: "blur(24px)",
+                ease: "power2.inOut" // Smooth easing curve
+            });
+        });
+
+        // Platforms Pin Animation
+        mm.add("(min-width: 1024px)", () => {
+            // Initially hide all cards
+            gsap.set('.platform-card', { opacity: 0, y: 40 });
+
+            // Set dynamic start positions for animation
+            gsap.set('.platform-card-ll', { x: -window.innerWidth / 2, y: 0, rotation: -8 });
+            gsap.set('.platform-card-rr', { x: window.innerWidth / 2, y: 0, rotation: 8 });
+
+            gsap.set('.platform-card-l', { x: -window.innerWidth / 2, y: 0, rotation: -4 });
+            gsap.set('.platform-card-r', { x: window.innerWidth / 2, y: 0, rotation: 4 });
+
+            gsap.set('.platform-card-center', { scale: 0.7, y: 60 });
+
+            // Set icon wrap initial state
+            gsap.set('.platform-icon-wrap', { scale: 0, rotation: -180 });
+
+            const platformsTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: "#platforms",
+                    start: "center center",
+                    end: "+=2000",
+                    pin: true,
+                    scrub: 0.8
+                }
+            });
+
+            // Stage 1: Outer cards slide IN from edges with rotation
+            platformsTl.to('.platform-card-ll', { 
+                x: 0, opacity: 1, rotation: 0, duration: 1, ease: "power3.out" 
+            }, "stage1")
+            .to('.platform-card-rr', { 
+                x: 0, opacity: 1, rotation: 0, duration: 1, ease: "power3.out" 
+            }, "stage1")
+            .to('.platform-card-ll .platform-icon-wrap', { 
+                scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.7)" 
+            }, "stage1+=0.3")
+            .to('.platform-card-rr .platform-icon-wrap', { 
+                scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.7)" 
+            }, "stage1+=0.3");
+
+            // Stage 2: Inner cards slide IN from edges
+            platformsTl.to('.platform-card-l', { 
+                x: 0, opacity: 1, rotation: 0, duration: 1, ease: "power3.out" 
+            }, "stage2")
+            .to('.platform-card-r', { 
+                x: 0, opacity: 1, rotation: 0, duration: 1, ease: "power3.out" 
+            }, "stage2")
+            .to('.platform-card-l .platform-icon-wrap', { 
+                scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.7)" 
+            }, "stage2+=0.2")
+            .to('.platform-card-r .platform-icon-wrap', { 
+                scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.7)" 
+            }, "stage2+=0.2");
+
+            // Stage 3: Center card scales and fades IN
+            platformsTl.to('.platform-card-center', { 
+                scale: 1, y: 0, opacity: 1, duration: 1, ease: "power3.out" 
+            }, "stage3")
+            .to('.platform-card-center .platform-icon-wrap', { 
+                scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.7)" 
+            }, "stage3+=0.2");
+
+            // Stage 4: Subtle feature tags reveal
+            platformsTl.to('.platform-feature-tag', { 
+                y: 0, opacity: 1, stagger: 0.05, duration: 0.5, ease: "power2.out" 
+            }, "stage4");
+        });
+
+        // Section stacking disabled — using normal static scrolling.
+
+        // === How It Works: Pair-by-Pair Row Reveal ===
+        gsap.utils.toArray('.process-row').forEach((row) => {
+            const items = row.querySelectorAll('.process-item');
+            gsap.set(items, { opacity: 0, y: 40 });
+            ScrollTrigger.create({
+                trigger: row,
+                start: 'top 82%',
+                onEnter: () => gsap.to(items, {
+                    opacity: 1, y: 0, duration: 0.7,
+                    ease: 'power3.out', stagger: 0.15
+                })
+            });
+        });
+
         // Mobile menu toggle
         const mobileToggle = document.getElementById('mobileToggle');
         const mobileMenu = document.getElementById('mobileMenu');
         let isMenuOpen = false;
-        
+
         if (mobileToggle && mobileMenu) {
             mobileToggle.addEventListener('click', () => {
                 isMenuOpen = !isMenuOpen;
                 mobileMenu.classList.toggle('open', isMenuOpen);
                 document.body.style.overflow = isMenuOpen ? 'hidden' : '';
-                
+
                 // Update icon
                 const icon = mobileToggle.querySelector('svg');
                 if (icon) {
-                    icon.innerHTML = isMenuOpen 
+                    icon.innerHTML = isMenuOpen
                         ? '<path d="M18 6L6 18M6 6l12 12"/>'
                         : '<path d="M4 6h16M4 12h16M4 18h16"/>';
                 }
             });
-            
+
             // Close mobile menu on link click
             mobileMenu.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', () => {
@@ -998,12 +1865,12 @@
                 });
             });
         }
-        
+
         // Hero Animations - Smooth entrance
         const heroTl = gsap.timeline({
             defaults: { ease: expoEase }
         });
-        
+
         heroTl.to('.hero-tagline .word', {
             y: 0,
             opacity: 1,
@@ -1011,17 +1878,17 @@
             stagger: 0.1,
             delay: 0.3
         })
-        .to('.hero-subtext', {
-            y: 0,
-            opacity: 1,
-            duration: 0.8
-        }, '-=0.5')
-        .to('.hero-cta', {
-            y: 0,
-            opacity: 1,
-            duration: 0.8
-        }, '-=0.5');
-        
+            .to('.hero-subtext', {
+                y: 0,
+                opacity: 1,
+                duration: 0.8
+            }, '-=0.5')
+            .to('.hero-cta', {
+                y: 0,
+                opacity: 1,
+                duration: 0.8
+            }, '-=0.5');
+
         // Offer Cards - Quick, snappy reveal
         gsap.utils.toArray('.offer-card').forEach((card, i) => {
             gsap.to(card, {
@@ -1037,7 +1904,7 @@
                 delay: i * 0.05
             });
         });
-        
+
         // Process Items - Quick reveal
         const processItems = gsap.utils.toArray('.process-item');
         processItems.forEach((item, i) => {
@@ -1054,7 +1921,7 @@
                 delay: i * 0.08
             });
         });
-        
+
 
         // Platforms - Quick fade up
         gsap.utils.toArray('.platform-item').forEach((item, i) => {
@@ -1071,7 +1938,7 @@
                 delay: i * 0.04
             });
         });
-        
+
         // Contact Cards - Quick reveal
         gsap.utils.toArray('.contact-card').forEach((card, i) => {
             gsap.to(card, {
@@ -1087,7 +1954,7 @@
                 delay: i * 0.08
             });
         });
-        
+
         // Section Headers - Quick reveal
         gsap.utils.toArray('.section-header').forEach(header => {
             gsap.from(header.children, {
@@ -1103,10 +1970,10 @@
                 }
             });
         });
-        
+
         // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
+            anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
@@ -1119,4 +1986,5 @@
         });
     </script>
 </body>
+
 </html>
