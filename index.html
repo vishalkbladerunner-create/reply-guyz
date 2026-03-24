@@ -874,15 +874,16 @@
         /* Contact Section - Responsive */
         .contact-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
-            max-width: 600px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 640px) {
             .contact-grid {
                 grid-template-columns: 1fr;
+                max-width: 400px;
             }
         }
 
