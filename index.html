@@ -2306,16 +2306,18 @@
 
         @media (max-width: 640px) {
             .stepper-card {
-                flex-direction: row;
-                align-items: flex-start;
+                flex-direction: column;
+                align-items: stretch;
                 gap: 1rem;
-                padding: 1.25rem;
+                padding: 1.5rem;
             }
             .stepper-number {
-                margin-bottom: 0;
+                margin-bottom: 1rem;
             }
             .stepper-visual {
-                display: none;
+                display: flex;
+                height: 100px;
+                margin-bottom: 1rem;
             }
             .stepper-content {
                 flex: 1;
