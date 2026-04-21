@@ -1,0 +1,11 @@
+.DS_Store
+**/.DS_Store
+.agents/
+.opencode/
+skills-lock.json
+target.md
+update_website.py
+*.png
+*.jpg
+*.jpeg
+/memories/
