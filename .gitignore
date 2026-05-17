@@ -9,3 +9,15 @@ update_website.py
 *.jpg
 *.jpeg
 /memories/
+
+# Dashboard build artifacts
+dashboard-app/node_modules/
+dashboard-app/dist/
+dashboard-app/.env
+.vercel
+
+# Private client data files
+new feature/
+*.xlsx
+*.csv
+*.docx
