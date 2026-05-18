@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   LogOut,
   ChevronRight,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -22,6 +23,7 @@ const navItems = [
 
 const adminNavItems = [
   { path: '/upload', label: 'Upload Data', icon: Upload },
+  { path: '/users', label: 'User Management', icon: Users },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -82,7 +84,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <p className="text-sm font-medium text-white truncate">
                 {user?.full_name || user?.email}
               </p>
-              <p className="text-xs text-white/40 capitalize">{user?.role}</p>
+              <p className="text-xs text-white/40 capitalize">
+                {user?.status === 'approved' ? user?.role : user?.status}
+              </p>
             </div>
           </div>
           <button

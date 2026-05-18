@@ -87,7 +87,7 @@ export default function Login() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="input-field"
-                  placeholder="John Doe"
+                  placeholder="Your name"
                   required
                 />
               </div>

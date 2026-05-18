@@ -20,7 +20,8 @@ CREATE TABLE profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   full_name TEXT,
-  role TEXT NOT NULL CHECK (role IN ('admin','client')) DEFAULT 'client',
+  status TEXT NOT NULL CHECK (status IN ('pending','approved','rejected')) DEFAULT 'pending',
+  role TEXT CHECK (role IN ('admin','client')),
   client_id UUID REFERENCES clients(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -100,61 +101,84 @@ ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE daily_metrics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE engagement_orders ENABLE ROW LEVEL SECURITY;
 
+-- Helper: check if current user is approved
+CREATE OR REPLACE FUNCTION public.is_approved_user()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE id = (SELECT auth.uid()) AND status = 'approved'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Clients: Everyone can read
 CREATE POLICY "Clients are viewable by everyone" ON clients
   FOR SELECT TO authenticated USING (true);
 
--- Profiles: Users can read their own profile
+-- Profiles: Users can read their own profile (any status, needed for pending screen)
 CREATE POLICY "Users can read own profile" ON profiles
   FOR SELECT TO authenticated USING ((SELECT auth.uid()) = id);
 
--- Profiles: Admins can read all profiles
+-- Profiles: Admins can read all profiles (including pending)
 CREATE POLICY "Admins can read all profiles" ON profiles
   FOR SELECT TO authenticated USING (
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin')
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin' AND p.status = 'approved')
   );
 
--- Posts: Clients can only read their own client_id data
+-- Profiles: Admins can update profiles (approve/reject/assign)
+CREATE POLICY "Admins can update profiles" ON profiles
+  FOR UPDATE TO authenticated USING (
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin' AND p.status = 'approved')
+  );
+
+-- Posts: Only approved users can read
 CREATE POLICY "Clients can read own posts" ON posts
   FOR SELECT TO authenticated USING (
-    client_id IN (
-      SELECT client_id FROM profiles WHERE id = (SELECT auth.uid())
-    ) OR
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin')
+    is_approved_user() AND (
+      client_id IN (
+        SELECT client_id FROM profiles WHERE id = (SELECT auth.uid())
+      ) OR
+      EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin')
+    )
   );
 
 -- Posts: Admins can insert/update/delete
 CREATE POLICY "Admins can manage posts" ON posts
   FOR ALL TO authenticated USING (
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin')
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin' AND p.status = 'approved')
   );
 
--- Daily Metrics: Same pattern as posts
+-- Daily Metrics: Only approved users can read
 CREATE POLICY "Clients can read own metrics" ON daily_metrics
   FOR SELECT TO authenticated USING (
-    client_id IN (
-      SELECT client_id FROM profiles WHERE id = (SELECT auth.uid())
-    ) OR
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin')
+    is_approved_user() AND (
+      client_id IN (
+        SELECT client_id FROM profiles WHERE id = (SELECT auth.uid())
+      ) OR
+      EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin')
+    )
   );
 
 CREATE POLICY "Admins can manage metrics" ON daily_metrics
   FOR ALL TO authenticated USING (
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin')
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin' AND p.status = 'approved')
   );
 
--- Engagement Orders: Same pattern
+-- Engagement Orders: Only approved users can read
 CREATE POLICY "Clients can read own orders" ON engagement_orders
   FOR SELECT TO authenticated USING (
-    client_id IN (
-      SELECT client_id FROM profiles WHERE id = (SELECT auth.uid())
-    ) OR
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin')
+    is_approved_user() AND (
+      client_id IN (
+        SELECT client_id FROM profiles WHERE id = (SELECT auth.uid())
+      ) OR
+      EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin')
+    )
   );
 
 CREATE POLICY "Admins can manage orders" ON engagement_orders
   FOR ALL TO authenticated USING (
-    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin')
+    EXISTS (SELECT 1 FROM profiles p WHERE p.id = (SELECT auth.uid()) AND p.role = 'admin' AND p.status = 'approved')
   );
 
 -- ============================================
@@ -177,12 +201,13 @@ CREATE TRIGGER update_posts_updated_at BEFORE UPDATE ON posts
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, email, full_name, role)
+  INSERT INTO public.profiles (id, email, full_name, status, role)
   VALUES (
     NEW.id,
     NEW.email,
     NEW.raw_user_meta_data->>'full_name',
-    COALESCE(NEW.raw_user_meta_data->>'role', 'client')
+    'pending',
+    NULL
   );
   RETURN NEW;
 END;

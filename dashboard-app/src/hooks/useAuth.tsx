@@ -8,6 +8,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   isAdmin: boolean
+  isApproved: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -54,18 +55,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Ensure profile exists (fallback if trigger wasn't set up)
     if (data.user) {
-      const { data: existing } = await supabase.from('profiles').select('id').eq('id', data.user.id).single()
+      const { data: existing } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
       if (!existing) {
-        await supabase.from('profiles').insert({
+        const { data: newProfile } = await supabase.from('profiles').insert({
           id: data.user.id,
           email: data.user.email,
           full_name: data.user.user_metadata?.full_name || '',
-          role: 'client',
-        } as any)
+          status: 'pending',
+          role: null,
+        } as any).select().single()
+        setUser(newProfile)
+      } else {
+        setUser(existing)
       }
-      // Refresh profile
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
-      setUser(profile)
     }
     return { error: null }
   }, [])
@@ -90,7 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: data.user.id,
           email: data.user.email,
           full_name: fullName,
-          role: 'client',
+          status: 'pending',
+          role: null,
         } as any)
       }
     }
@@ -110,7 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signIn,
         signUp,
         signOut,
-        isAdmin: user?.role === 'admin',
+        isAdmin: user?.role === 'admin' && user?.status === 'approved',
+        isApproved: user?.status === 'approved',
       }}
     >
       {children}

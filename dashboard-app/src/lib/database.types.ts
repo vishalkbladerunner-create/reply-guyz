@@ -37,7 +37,8 @@ export interface Database {
           id: string
           email: string
           full_name: string | null
-          role: string
+          status: string
+          role: string | null
           client_id: string | null
           created_at: string
         }
@@ -45,7 +46,8 @@ export interface Database {
           id: string
           email: string
           full_name?: string | null
-          role?: string
+          status?: string
+          role?: string | null
           client_id?: string | null
           created_at?: string
         }
@@ -53,7 +55,8 @@ export interface Database {
           id?: string
           email?: string
           full_name?: string | null
-          role?: string
+          status?: string
+          role?: string | null
           client_id?: string | null
           created_at?: string
         }

@@ -8,6 +8,7 @@ import PlatformAnalytics from '@/pages/PlatformAnalytics'
 import EngagementOrders from '@/pages/EngagementOrders'
 import Reports from '@/pages/Reports'
 import Upload from '@/pages/Upload'
+import UserManagement from '@/pages/UserManagement'
 
 function App() {
   return (
@@ -29,6 +30,14 @@ function App() {
                     element={
                       <AuthGuard requireAdmin>
                         <Upload />
+                      </AuthGuard>
+                    }
+                  />
+                  <Route
+                    path="/users"
+                    element={
+                      <AuthGuard requireAdmin>
+                        <UserManagement />
                       </AuthGuard>
                     }
                   />
