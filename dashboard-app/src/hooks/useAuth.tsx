@@ -49,19 +49,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { error }
+    
+    // Ensure profile exists (fallback if trigger wasn't set up)
+    if (data.user) {
+      const { data: existing } = await supabase.from('profiles').select('id').eq('id', data.user.id).single()
+      if (!existing) {
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          email: data.user.email,
+          full_name: data.user.user_metadata?.full_name || '',
+          role: 'client',
+        } as any)
+      }
+      // Refresh profile
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
+      setUser(profile)
+    }
+    return { error: null }
   }, [])
 
   const signUp = useCallback(async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
+    const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/dashboard/login` : undefined
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: fullName },
+        emailRedirectTo: redirectTo,
       },
     })
-    return { error }
+    if (error) return { error }
+    
+    // Manually create profile if trigger isn't working
+    if (data.user) {
+      const { data: existing } = await supabase.from('profiles').select('id').eq('id', data.user.id).single()
+      if (!existing) {
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          email: data.user.email,
+          full_name: fullName,
+          role: 'client',
+        } as any)
+      }
+    }
+    return { error: null }
   }, [])
 
   const signOut = useCallback(async () => {

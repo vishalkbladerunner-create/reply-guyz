@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Eye, EyeOff, Loader2, TrendingUp } from 'lucide-react'
@@ -13,6 +13,23 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Parse auth callback errors from URL hash
+  useEffect(() => {
+    const hash = window.location.hash
+    if (hash.includes('error=')) {
+      const params = new URLSearchParams(hash.replace('#', ''))
+      const errorCode = params.get('error_code')
+      const errorDesc = params.get('error_description')
+      if (errorCode === 'otp_expired') {
+        setError('Email link expired. Please sign in with your password, or request a new confirmation email.')
+      } else if (errorDesc) {
+        setError(decodeURIComponent(errorDesc.replace(/\+/g, ' ')))
+      }
+      // Clear the hash
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
