@@ -1,255 +1,302 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useClient } from '@/hooks/useClient'
-import { supabase } from '@/lib/supabase'
-import { Download, FileText, Calendar, ChevronRight, Loader2 } from 'lucide-react'
-import KpiCards from '@/components/KpiCards'
+import { useReportData } from '@/hooks/useReportData'
+import StatCard from '@/components/StatCard'
+import DateRangePicker, { type DateRange } from '@/components/DateRangePicker'
+import LoadingSkeleton from '@/components/LoadingSkeleton'
+import EmptyState from '@/components/EmptyState'
+import ErrorState from '@/components/ErrorState'
 import LineChart from '@/components/Charts/LineChart'
 import BarChart from '@/components/Charts/BarChart'
-import DateRangePicker, { type DateRange, getDateRangeValue } from '@/components/DateRangePicker'
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, subMonths } from 'date-fns'
-
-const reportTypes = [
-  { key: 'weekly', label: 'Weekly Report', description: 'Automatically generated every Monday' },
-  { key: 'monthly', label: 'Monthly Report', description: 'Automatically generated on the 1st of each month' },
-  { key: 'custom', label: 'Custom Date Range', description: 'Pick any date range to analyze' },
-]
+import PieChart from '@/components/Charts/PieChart'
+import RichDataTable from '@/components/RichDataTable'
+import { formatNumber, formatDateShort } from '@/lib/utils'
+import { FileText, Calendar, Download, ExternalLink, ChevronRight } from 'lucide-react'
 
 export default function Reports() {
-  const { selectedClientId } = useClient()
+  const navigate = useNavigate()
+  const { selectedClientId, clients } = useClient()
+  const selectedClient = clients.find((c) => c.id === selectedClientId)
   const [selectedType, setSelectedType] = useState('custom')
   const [dateRange, setDateRange] = useState<DateRange>({ preset: 'last7' })
-  const [metrics, setMetrics] = useState<any[]>([])
-  const [posts, setPosts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
 
-  const { start, end } = getDateRangeValue(dateRange)
-  const isWeekly = selectedType === 'weekly'
-  const isMonthly = selectedType === 'monthly'
+  const activePlatforms = selectedClient?.active_platforms || ['twitter']
 
-  useEffect(() => {
-    if (!selectedClientId) {
-      setLoading(false)
-      return
-    }
-    fetchData()
-  }, [selectedClientId, dateRange, selectedType])
+  const { posts, currentStats, previousStats, dailyMetrics, loading, error, refresh } = useReportData(selectedClientId, dateRange)
 
-  const fetchData = async () => {
-    setLoading(true)
-    const startStr = start.toISOString().split('T')[0]
-    const endStr = end.toISOString().split('T')[0]
+  const periodLabel = useMemo(() => {
+    if (posts.length === 0) return ''
+    const dates = posts.map((p) => p.post_date).sort()
+    return `${formatDateShort(dates[0])} – ${formatDateShort(dates[dates.length - 1])}`
+  }, [posts])
 
-    const [{ data: metricsData }, { data: postsData }] = await Promise.all([
-      supabase
-        .from('daily_metrics')
-        .select('*')
-        .eq('client_id', selectedClientId!)
-        .gte('metric_date', startStr)
-        .lte('metric_date', endStr)
-        .order('metric_date'),
-      supabase
-        .from('posts')
-        .select('*')
-        .eq('client_id', selectedClientId!)
-        .gte('post_date', startStr)
-        .lte('post_date', endStr),
-    ])
+  const platformPosts = useMemo(() => {
+    const map: Record<string, typeof posts> = {}
+    activePlatforms.forEach((p) => { map[p] = [] })
+    posts.forEach((p) => {
+      if (map[p.platform]) map[p.platform].push(p)
+    })
+    return map
+  }, [posts, activePlatforms])
 
-    setMetrics(metricsData || [])
-    setPosts(postsData || [])
-    setLoading(false)
+  const tierPosts = useMemo(() => {
+    const sorted = [...posts].sort((a, b) => (b.engagements || 0) - (a.engagements || 0))
+    const n = sorted.length
+    if (n === 0) return { high: [], medium: [], low: [] }
+    const highCut = Math.max(1, Math.floor(n * 0.25))
+    const lowCut = Math.max(highCut, Math.floor(n * 0.75))
+    return { high: sorted.slice(0, highCut), medium: sorted.slice(highCut, lowCut), low: sorted.slice(lowCut) }
+  }, [posts])
+
+  const tierData = useMemo(() => [
+    tierPosts.high.reduce((s, p) => s + (p.engagements || 0), 0),
+    tierPosts.medium.reduce((s, p) => s + (p.engagements || 0), 0),
+    tierPosts.low.reduce((s, p) => s + (p.engagements || 0), 0),
+  ], [tierPosts])
+
+  const pctChange = (curr: number, prev: number) => {
+    if (prev === 0) return { value: 0, positive: true }
+    const val = ((curr - prev) / prev) * 100
+    return { value: Math.abs(parseFloat(val.toFixed(1))), positive: val >= 0 }
   }
 
-  // Aggregate by date for charts
-  const dailyMap = new Map<string, any>()
-  metrics.forEach((m) => {
-    const existing = dailyMap.get(m.metric_date) || { impressions: 0, engagements: 0, likes: 0, reposts: 0, followers: 0, posts: 0 }
-    dailyMap.set(m.metric_date, {
-      impressions: existing.impressions + (m.impressions || 0),
-      engagements: existing.engagements + (m.engagements || 0),
-      likes: existing.likes + (m.likes || 0),
-      reposts: existing.reposts + (m.reposts || 0),
-      followers: m.net_followers || existing.followers,
-      posts: existing.posts + (m.posts_created || 0),
+  const bestDay = useMemo(() => {
+    const dayMap = new Map<string, number>()
+    posts.forEach((p) => {
+      dayMap.set(p.post_date, (dayMap.get(p.post_date) || 0) + (p.engagements || 0))
     })
-  })
-  const sortedDates = Array.from(dailyMap.keys()).sort()
-  const reportData = sortedDates.map((d) => ({ date: d, ...dailyMap.get(d) }))
+    let best = ''
+    let bestVal = 0
+    dayMap.forEach((v, k) => { if (v > bestVal) { bestVal = v; best = k } })
+    return { date: best, value: bestVal }
+  }, [posts])
 
-  const totalImpressions = metrics.reduce((sum, d) => sum + (d.impressions || 0), 0)
-  const totalEngagements = metrics.reduce((sum, d) => sum + (d.engagements || 0), 0)
-  const totalPosts = posts.length
-  const avgEngagementRate = totalImpressions > 0 ? ((totalEngagements / totalImpressions) * 100).toFixed(1) : '0'
-
-  const kpis = [
-    { label: 'Total Impressions', value: totalImpressions, prefix: '' },
-    { label: 'Total Engagements', value: totalEngagements, prefix: '' },
-    { label: 'Engagement Rate', value: parseFloat(avgEngagementRate), suffix: '%' },
-    { label: 'Posts Published', value: totalPosts, prefix: '' },
-  ]
-
-  const dates = reportData.map((d) => d.date)
-  const impressionsData = reportData.map((d) => d.impressions)
-  const engagementsData = reportData.map((d) => d.engagements)
-
-  const handleExport = () => {
-    const csvContent = [
-      ['Date', 'Impressions', 'Engagements', 'Likes', 'Reposts', 'Posts'].join(','),
-      ...reportData.map((d) => [d.date, d.impressions, d.engagements, d.likes, d.reposts, d.posts].join(',')),
-    ].join('\n')
-
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
+  const generateCSV = () => {
+    const header = 'Date,Platform,Likes,Reposts,Comments,Reactions,Engagements,Impressions,Post URL'
+    const rows = posts.map((p) =>
+      [p.post_date, p.platform, p.likes, p.reposts, p.comments, p.reactions, p.engagements, p.impressions, p.post_url || ''].join(',')
+    )
+    const csv = [header, ...rows].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `report-${selectedType}-${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.download = `report-custom-${new Date().toISOString().split('T')[0]}.csv`
     a.click()
-    window.URL.revokeObjectURL(url)
+    URL.revokeObjectURL(url)
   }
 
-  if (!selectedClientId) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="font-display text-xl font-medium text-navy mb-2">Select a Client</h2>
-          <p className="text-text-secondary">Choose a company from the sidebar to generate reports.</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-accent animate-spin" />
-      </div>
-    )
-  }
+  if (loading) return <LoadingSkeleton />
+  if (error) return <ErrorState message={error} onRetry={refresh} />
 
   return (
     <div className="space-y-8">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-medium text-navy">Reports</h1>
+          <h1 className="font-display text-3xl font-medium text-navy">📄 Reports</h1>
           <p className="text-text-secondary mt-1">Generate and export performance reports</p>
         </div>
-        <button onClick={handleExport} className="btn-secondary">
-          <Download className="w-4 h-4" />
-          Export CSV
+        <div className="flex gap-2">
+          <button onClick={generateCSV} className="btn-secondary text-sm">
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+          <button onClick={() => window.print()} className="btn-primary text-sm">
+            <Download className="w-4 h-4" /> Export PDF
+          </button>
+        </div>
+      </div>
+
+      {/* SECTION A — Report Type Selector */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <button
+          onClick={() => navigate('/weekly-report')}
+          className="card text-left transition-all card-hover"
+        >
+          <div className="flex items-start justify-between">
+            <FileText className="w-5 h-5 text-text-muted" />
+            <ChevronRight className="w-4 h-4 text-text-muted" />
+          </div>
+          <h3 className="font-display text-lg font-medium text-navy mt-3">Weekly Report</h3>
+          <p className="text-sm text-text-muted mt-1">Auto-generated weekly performance report</p>
+        </button>
+        <button
+          onClick={() => {
+            setSelectedType('monthly')
+            const now = new Date()
+            const start = new Date(now.getFullYear(), now.getMonth(), 1)
+            setDateRange({ preset: 'custom', start: start.toISOString().split('T')[0], end: now.toISOString().split('T')[0] })
+          }}
+          className={`card text-left transition-all ${selectedType === 'monthly' ? 'ring-2 ring-blue-accent' : 'card-hover'}`}
+        >
+          <FileText className={`w-5 h-5 ${selectedType === 'monthly' ? 'text-blue-accent' : 'text-text-muted'}`} />
+          <h3 className="font-display text-lg font-medium text-navy mt-3">Monthly Report</h3>
+          <p className="text-sm text-text-muted mt-1">This month's data snapshot</p>
+        </button>
+        <button
+          onClick={() => setSelectedType('custom')}
+          className={`card text-left transition-all ${selectedType === 'custom' ? 'ring-2 ring-blue-accent' : 'card-hover'}`}
+        >
+          <Calendar className={`w-5 h-5 ${selectedType === 'custom' ? 'text-blue-accent' : 'text-text-muted'}`} />
+          <h3 className="font-display text-lg font-medium text-navy mt-3">Custom Date Range</h3>
+          <p className="text-sm text-text-muted mt-1">Pick any date range to analyze</p>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {reportTypes.map((type) => (
-          <button
-            key={type.key}
-            onClick={() => setSelectedType(type.key)}
-            className={`card text-left transition-all ${
-              selectedType === type.key ? 'ring-2 ring-blue-accent bg-blue-accent/5' : 'card-hover'
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <FileText className={`w-5 h-5 ${selectedType === type.key ? 'text-blue-accent' : 'text-text-muted'}`} />
-              {selectedType === type.key && <ChevronRight className="w-4 h-4 text-blue-accent" />}
-            </div>
-            <h3 className="font-display text-lg font-medium text-navy mt-3">{type.label}</h3>
-            <p className="text-sm text-text-secondary mt-1">{type.description}</p>
-          </button>
-        ))}
-      </div>
-
+      {/* SECTION B — Date Range */}
       {selectedType === 'custom' && (
         <div className="card flex items-center gap-4">
-          <Calendar className="w-5 h-5 text-text-muted" />
+          <Calendar className="w-5 h-5 text-text-muted flex-shrink-0" />
           <div>
             <p className="text-sm text-text-muted">Select Date Range</p>
             <div className="mt-2">
               <DateRangePicker value={dateRange} onChange={setDateRange} />
             </div>
           </div>
-          <div className="ml-auto text-sm text-text-secondary">
-            {format(start, 'MMM d, yyyy')} — {format(end, 'MMM d, yyyy')}
-          </div>
+          {periodLabel && (
+            <div className="ml-auto text-sm text-navy font-medium">{periodLabel}</div>
+          )}
         </div>
       )}
 
-      {selectedType !== 'custom' && (
-        <div className="card">
-          <div className="flex items-center gap-3">
-            <Calendar className="w-5 h-5 text-text-muted" />
-            <div>
-              <p className="text-sm text-text-muted">Report Period</p>
-              <p className="text-navy font-medium">
-                {isWeekly && `Week of ${format(startOfWeek(subDays(new Date(), 7)), 'MMM d')} — ${format(endOfWeek(subDays(new Date(), 7)), 'MMM d, yyyy')}`}
-                {isMonthly && `${format(startOfMonth(subMonths(new Date(), 1)), 'MMMM yyyy')}`}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <KpiCards kpis={kpis} />
-
-      {metrics.length === 0 ? (
-        <div className="card text-center py-12">
-          <p className="text-text-muted">No data yet for this period.</p>
-          <p className="text-text-muted text-sm mt-1">Upload data via Data Entry to generate reports.</p>
-        </div>
+      {posts.length === 0 ? (
+        <EmptyState icon={FileText} title="No data yet" description="No posts found for the selected date range." />
       ) : (
         <>
+          {/* SECTION C — Period KPI Cards with Comparison */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard
+              label="Total Posts"
+              value={currentStats.totalPosts}
+              change={pctChange(currentStats.totalPosts, previousStats.totalPosts)}
+              icon={FileText}
+            />
+            <StatCard
+              label="Total Engagement"
+              value={currentStats.totalEngagements}
+              change={pctChange(currentStats.totalEngagements, previousStats.totalEngagements)}
+            />
+            <StatCard
+              label="Engagement Rate"
+              value={currentStats.totalImpressions > 0 ? ((currentStats.totalEngagements / currentStats.totalImpressions) * 100).toFixed(1) : '0'}
+              suffix="%"
+              change={pctChange(
+                currentStats.totalImpressions > 0 ? currentStats.totalEngagements / currentStats.totalImpressions : 0,
+                previousStats.totalImpressions > 0 ? previousStats.totalEngagements / previousStats.totalImpressions : 0
+              )}
+            />
+            <StatCard
+              label="Best Day"
+              value={bestDay.date ? formatDateShort(bestDay.date) : '—'}
+              subtitle={bestDay.value > 0 ? `${formatNumber(bestDay.value)} engagements` : ''}
+            />
+          </div>
+
+          {/* SECTION D — Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="card">
-              <h3 className="font-display text-lg font-medium text-navy mb-4">Impressions & Engagements</h3>
+              <h3 className="font-display text-lg font-medium text-navy mb-4">Impressions & Engagement Trend</h3>
               <LineChart
-                labels={dates}
+                labels={dailyMetrics.map((m) => m.metric_date)}
                 datasets={[
-                  { label: 'Impressions', data: impressionsData, color: '#4479e1' },
-                  { label: 'Engagements', data: engagementsData, color: '#1a2332' },
+                  { label: 'Impressions', data: dailyMetrics.map((m) => m.impressions || 0), color: '#4479e1' },
+                  { label: 'Engagements', data: dailyMetrics.map((m) => m.engagements || 0), color: '#1a2332' },
                 ]}
               />
             </div>
             <div className="card">
-              <h3 className="font-display text-lg font-medium text-navy mb-4">Engagement Breakdown</h3>
+              <h3 className="font-display text-lg font-medium text-navy mb-4">Engagement Composition</h3>
               <BarChart
-                labels={['Likes', 'Reposts', 'Comments', 'Shares']}
+                labels={['Likes', 'Reposts', 'Comments', 'Reactions']}
                 datasets={[
-                  { label: 'Current Period', data: [
-                    metrics.reduce((s, m) => s + (m.likes || 0), 0),
-                    metrics.reduce((s, m) => s + (m.reposts || 0), 0),
-                    metrics.reduce((s, m) => s + (m.replies || 0), 0),
-                    metrics.reduce((s, m) => s + (m.shares || 0), 0),
-                  ], color: '#4479e1' },
-                  { label: 'Previous Period', data: [0, 0, 0, 0], color: '#6b8cae' },
+                  {
+                    label: 'Current Period',
+                    data: [currentStats.totalLikes, currentStats.totalReposts, currentStats.totalComments, currentStats.totalReactions],
+                    color: '#4479e1',
+                  },
+                  {
+                    label: 'Previous Period',
+                    data: [previousStats.totalLikes, previousStats.totalReposts, previousStats.totalComments, previousStats.totalReactions],
+                    color: '#6b8cae',
+                  },
                 ]}
-                title="Engagement Types"
+                title="Engagement by Type"
               />
             </div>
           </div>
 
-          <div className="card">
-            <h3 className="font-display text-lg font-medium text-navy mb-4">Report Summary</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b border-navy/5">
-                <span className="text-text-secondary">Report Type</span>
-                <span className="font-medium text-navy capitalize">{selectedType} Report</span>
-              </div>
-              <div className="flex items-center justify-between py-3 border-b border-navy/5">
-                <span className="text-text-secondary">Period</span>
-                <span className="font-medium text-navy">{format(start, 'MMM d')} — {format(end, 'MMM d, yyyy')}</span>
-              </div>
-              <div className="flex items-center justify-between py-3 border-b border-navy/5">
-                <span className="text-text-secondary">Total Posts</span>
-                <span className="font-medium text-navy">{totalPosts}</span>
-              </div>
-              <div className="flex items-center justify-between py-3 border-b border-navy/5">
-                <span className="text-text-secondary">Avg Engagement Rate</span>
-                <span className="font-medium text-navy">{avgEngagementRate}%</span>
-              </div>
-              <div className="flex items-center justify-between py-3">
-                <span className="text-text-secondary">Net Follower Growth</span>
-                <span className="font-medium text-green-600">+{metrics[metrics.length - 1]?.net_followers || 0}</span>
-              </div>
+          {activePlatforms.length > 1 && (
+            <div className="card">
+              <h3 className="font-display text-lg font-medium text-navy mb-4">Platform Comparison</h3>
+              <BarChart
+                labels={activePlatforms.map((p) => p.charAt(0).toUpperCase() + p.slice(1))}
+                datasets={[
+                  { label: 'Posts', data: activePlatforms.map((p) => platformPosts[p]?.length || 0), color: '#1a2332' },
+                  { label: 'Engagement', data: activePlatforms.map((p) => platformPosts[p]?.reduce((s, x) => s + (x.engagements || 0), 0) || 0), color: '#4479e1' },
+                ]}
+                title="Posts & Engagement by Platform"
+              />
             </div>
+          )}
+
+          {/* SECTION E — Top Posts */}
+          <div className="card">
+            <h3 className="font-display text-lg font-medium text-navy mb-4">Top Posts</h3>
+            <RichDataTable
+              columns={[
+                { key: 'post_date', label: 'Date', sortable: true, align: 'left' as const, render: (v: any) => <span className="text-xs">{formatDateShort(v)}</span> },
+                { key: 'platform', label: 'Platform', sortable: true, align: 'left' as const, render: (v: any) => <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${v === 'twitter' ? 'bg-blue-50 text-blue-700' : v === 'instagram' ? 'bg-pink-50 text-pink-700' : 'bg-sky-50 text-sky-700'}`}>{v}</span> },
+                { key: 'post_text', label: 'Post', align: 'left' as const, render: (v: any) => v ? <span className="block max-w-xs truncate" title={v}>{v.slice(0, 60)}{v.length > 60 ? '…' : ''}</span> : <span className="text-text-muted">—</span> },
+                { key: 'likes', label: 'Likes', sortable: true, align: 'right' as const, render: (v: any) => <span className="text-sm">{formatNumber(v || 0)}</span> },
+                { key: 'reposts', label: 'Reposts', sortable: true, align: 'right' as const, render: (v: any) => <span className="text-sm">{formatNumber(v || 0)}</span> },
+                { key: 'engagements', label: 'Engagement', sortable: true, align: 'right' as const, render: (v: any) => <span className="text-sm font-medium text-navy">{formatNumber(v || 0)}</span> },
+                { key: 'post_url', label: 'Link', align: 'center' as const, render: (v: any) => v ? <a href={v} target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-blue-accent"><ExternalLink className="w-4 h-4" /></a> : '—' },
+              ]}
+              rows={posts.slice(0, 25)}
+              topN={25}
+              pageSize={25}
+              searchable
+              searchKey="post_text"
+            />
+          </div>
+
+          {/* SECTION F — Engagement Tier Breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card">
+              <h3 className="font-display text-lg font-medium text-navy mb-4">Engagement Tier Distribution</h3>
+              <PieChart
+                labels={['High (Top 25%)', 'Medium (Mid 50%)', 'Low (Bottom 25%)']}
+                data={tierData}
+                colors={['#1a2332', '#4479e1', '#6b8cae']}
+              />
+            </div>
+            <div className="space-y-4">
+              {[
+                { label: 'High Engagement (Top 25%)', posts: tierPosts.high, color: '#1a2332' },
+                { label: 'Medium Engagement (Mid 50%)', posts: tierPosts.medium, color: '#4479e1' },
+                { label: 'Low Engagement (Bottom 25%)', posts: tierPosts.low, color: '#6b8cae' },
+              ].map((tier) => (
+                <div key={tier.label} className="card p-4" style={{ borderLeft: `4px solid ${tier.color}` }}>
+                  <p className="text-sm font-medium text-navy">{tier.label}</p>
+                  <p className="text-xs text-text-muted mt-1">
+                    {tier.posts.length} posts · Avg {tier.posts.length > 0
+                      ? (tier.posts.reduce((s, p) => s + (p.engagements || 0), 0) / tier.posts.length).toFixed(1)
+                      : '0'} engagement/post
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* SECTION G — Export (bottom) */}
+          <div className="flex justify-center gap-3">
+            <button onClick={generateCSV} className="btn-secondary">
+              <Download className="w-4 h-4" /> Export CSV
+            </button>
+            <button onClick={() => window.print()} className="btn-primary">
+              <Download className="w-4 h-4" /> Export PDF
+            </button>
           </div>
         </>
       )}

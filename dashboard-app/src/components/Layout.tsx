@@ -1,32 +1,29 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useClient } from '@/hooks/useClient'
-import {
-  LayoutDashboard,
-  BarChart3,
-  FileText,
-  Upload,
-  ShoppingCart,
-  LogOut,
-  ChevronRight,
-  Users,
-  Building2,
-} from 'lucide-react'
+import { LogOut, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const allNavItems = [
-  { path: '/', label: 'Overview', icon: LayoutDashboard, platforms: ['twitter', 'instagram', 'telegram'] },
-  { path: '/platform/twitter', label: 'Twitter Analytics', icon: BarChart3, platforms: ['twitter'] },
-  { path: '/platform/instagram', label: 'Instagram Analytics', icon: BarChart3, platforms: ['instagram'] },
-  { path: '/platform/telegram', label: 'Telegram Analytics', icon: BarChart3, platforms: ['telegram'] },
-  { path: '/engagement-orders', label: 'Engagement Orders', icon: ShoppingCart, platforms: ['twitter', 'instagram', 'telegram'] },
-  { path: '/reports', label: 'Reports', icon: FileText, platforms: ['twitter', 'instagram', 'telegram'] },
+const platformNavItems = [
+  { path: '/platform/twitter', label: '𝕏 Twitter Analytics', platforms: ['twitter'] },
+  { path: '/platform/instagram', label: '📸 Instagram Analytics', platforms: ['instagram'] },
+  { path: '/platform/telegram', label: '✈️ Telegram Analytics', platforms: ['telegram'] },
+]
+
+const reportNavItems = [
+  { path: '/weekly-report', label: '📝 Weekly Report', platforms: ['twitter', 'instagram', 'telegram'] },
+  { path: '/reports', label: '📄 Custom Reports', platforms: ['twitter', 'instagram', 'telegram'] },
+]
+
+const operationNavItems = [
+  { path: '/booster-tracker', label: '🚀 Booster Tracker', platforms: ['twitter', 'instagram', 'telegram'] },
+  { path: '/engagement-orders', label: '🛒 Engagement Orders', platforms: ['twitter', 'instagram', 'telegram'] },
 ]
 
 const adminNavItems = [
-  { path: '/upload', label: 'Upload Data', icon: Upload },
-  { path: '/users', label: 'User Management', icon: Users },
-  { path: '/clients', label: 'Manage Clients', icon: Building2 },
+  { path: '/upload', label: '📤 Upload Data', platforms: [] as string[] },
+  { path: '/users', label: '👥 User Management', platforms: [] as string[] },
+  { path: '/clients', label: '🏢 Manage Clients', platforms: [] as string[] },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -43,17 +40,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const selectedClient = clients.find((c) => c.id === selectedClientId)
   const activePlatforms = selectedClient?.active_platforms || ['twitter']
 
-  const filteredNavItems = allNavItems.filter((item) =>
-    item.platforms.some((p) => activePlatforms.includes(p))
-  )
+  const filterByPlatforms = (items: typeof platformNavItems) =>
+    items.filter((item) => item.platforms.length === 0 || item.platforms.some((p) => activePlatforms.includes(p)))
 
-  const navItemsToShow = isAdmin ? [...filteredNavItems, ...adminNavItems] : filteredNavItems
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/'
+    return location.pathname.startsWith(path)
+  }
 
   return (
     <div className="min-h-screen flex">
-      {/* Sidebar */}
       <aside className="w-64 bg-navy flex flex-col fixed h-full z-50">
-        {/* Logo */}
         <div className="p-6 border-b border-white/10">
           <Link to="/" className="flex items-center gap-2">
             <span className="font-display text-xl font-medium text-white">ReplyGuyz</span>
@@ -61,7 +58,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <p className="text-xs text-white/40 mt-1">Analytics Dashboard</p>
         </div>
 
-        {/* Client Selector (Admin only) */}
         {isAdmin && (
           <div className="px-4 py-3 border-b border-white/10">
             <label className="text-xs text-white/40 mb-1.5 block">Select Client</label>
@@ -78,29 +74,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItemsToShow.map((item) => {
-            const Icon = item.icon
-            const isActive = location.pathname === item.path
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  'sidebar-link',
-                  isActive && 'active'
-                )}
-              >
-                <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
-                {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
-              </Link>
-            )
-          })}
+        <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
+          <NavLink to="/" label="📊 Overview" isActive={isActive('/')} />
+
+          <NavSection label="PLATFORMS" />
+          {filterByPlatforms(platformNavItems).map((item) => (
+            <NavLink key={item.path} to={item.path} label={item.label} isActive={isActive(item.path)} />
+          ))}
+
+          <NavSection label="REPORTS" />
+          {filterByPlatforms(reportNavItems).map((item) => (
+            <NavLink key={item.path} to={item.path} label={item.label} isActive={isActive(item.path)} />
+          ))}
+
+          <NavSection label="OPERATIONS" />
+          {filterByPlatforms(operationNavItems).map((item) => (
+            <NavLink key={item.path} to={item.path} label={item.label} isActive={isActive(item.path)} />
+          ))}
+
+          {isAdmin && (
+            <>
+              <NavSection label="ADMIN" />
+              {adminNavItems.map((item) => (
+                <NavLink key={item.path} to={item.path} label={item.label} isActive={isActive(item.path)} />
+              ))}
+            </>
+          )}
         </nav>
 
-        {/* User section */}
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-9 h-9 rounded-full bg-blue-accent/20 flex items-center justify-center">
@@ -127,12 +128,31 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 ml-64">
         <div className="p-8 max-w-7xl mx-auto">
           {children}
         </div>
       </main>
     </div>
+  )
+}
+
+function NavLink({ to, label, isActive }: { to: string; label: string; isActive: boolean }) {
+  return (
+    <Link
+      to={to}
+      className={cn('sidebar-link', isActive && 'active')}
+    >
+      <span>{label}</span>
+      {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
+    </Link>
+  )
+}
+
+function NavSection({ label }: { label: string }) {
+  return (
+    <p className="px-4 pt-5 pb-1.5 text-[10px] font-semibold text-white/25 uppercase tracking-widest">
+      {label}
+    </p>
   )
 }

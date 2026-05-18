@@ -8,6 +8,8 @@ import Overview from '@/pages/Overview'
 import PlatformAnalytics from '@/pages/PlatformAnalytics'
 import EngagementOrders from '@/pages/EngagementOrders'
 import Reports from '@/pages/Reports'
+import WeeklyReport from '@/pages/WeeklyReport'
+import BoosterTracker from '@/pages/BoosterTracker'
 import Upload from '@/pages/Upload'
 import UserManagement from '@/pages/UserManagement'
 import Clients from '@/pages/Clients'
@@ -28,6 +30,8 @@ function App() {
                   <Route path="/platform/:platform" element={<PlatformAnalytics />} />
                   <Route path="/engagement-orders" element={<EngagementOrders />} />
                   <Route path="/reports" element={<Reports />} />
+                  <Route path="/weekly-report" element={<WeeklyReport />} />
+                  <Route path="/booster-tracker" element={<BoosterTracker />} />
                   <Route
                     path="/upload"
                     element={
