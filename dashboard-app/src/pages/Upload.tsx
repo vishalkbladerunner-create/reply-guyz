@@ -13,14 +13,6 @@ interface FilePreview {
 
 type Tab = 'upload' | 'daily-metrics' | 'posts' | 'engagement-orders' | 'import-json'
 
-interface JsonPost {
-  link: string
-  date: string
-  reply: number
-  retweet: number
-  like: number
-}
-
 export default function Upload() {
   const [activeTab, setActiveTab] = useState<Tab>('daily-metrics')
   const [isDragging, setIsDragging] = useState(false)
@@ -28,7 +20,8 @@ export default function Upload() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
   const [jsonInput, setJsonInput] = useState('')
-  const [jsonPreview, setJsonPreview] = useState<JsonPost[]>([])
+  const [jsonPreview, setJsonPreview] = useState<any[]>([])
+  const [jsonPlatform, setJsonPlatform] = useState<'twitter' | 'instagram' | 'telegram'>('twitter')
 
   const [dailyMetric, setDailyMetric] = useState({
     platform: 'twitter',
@@ -78,6 +71,14 @@ export default function Upload() {
     setTimeout(() => setMessage(null), 5000)
   }
 
+  // Flexible field extractors for different JSON formats
+  const getField = (item: any, ...names: string[]) => {
+    for (const name of names) {
+      if (item[name] !== undefined) return item[name]
+    }
+    return undefined
+  }
+
   const parseJsonInput = () => {
     try {
       const data = JSON.parse(jsonInput)
@@ -87,7 +88,7 @@ export default function Upload() {
         return
       }
       setJsonPreview(data.slice(0, 5))
-      showMessage('success', `Parsed ${data.length} posts. Showing first 5 preview.`)
+      showMessage('success', `Parsed ${data.length} posts for ${jsonPlatform}. Showing first 5 preview.`)
     } catch (err: any) {
       showMessage('error', 'Invalid JSON: ' + err.message)
       setJsonPreview([])
@@ -97,7 +98,7 @@ export default function Upload() {
   const importJsonPosts = async () => {
     setLoading(true)
     try {
-      const data: JsonPost[] = JSON.parse(jsonInput)
+      const data = JSON.parse(jsonInput)
       if (!Array.isArray(data) || data.length === 0) {
         throw new Error('JSON must be a non-empty array')
       }
@@ -105,31 +106,53 @@ export default function Upload() {
       const clientId = await getClientId()
       if (!clientId) throw new Error('Client not found')
 
-      const posts = data.map((item) => {
-        const dateObj = new Date(item.date)
+      const posts = data.map((item: any) => {
+        const rawDate = getField(item, 'date', 'timestamp', 'created_at', 'published_at')
+        const dateObj = rawDate ? new Date(rawDate) : new Date()
         const postDate = dateObj.toISOString().split('T')[0]
         const postTime = dateObj.toISOString().split('T')[1].replace('Z', '').substring(0, 8)
-        const likes = Number(item.like) || 0
-        const reposts = Number(item.retweet) || 0
-        const comments = Number(item.reply) || 0
-        const engagements = likes + reposts + comments
+
+        const postUrl = getField(item, 'link', 'url', 'post_url', 'permalink') || null
+        const likes = Number(getField(item, 'like', 'likes', 'favorites')) || 0
+        const comments = Number(getField(item, 'reply', 'replies', 'comments')) || 0
+
+        // Platform-specific mappings
+        let reposts = 0
+        let shares = 0
+        let reactions = 0
+        let impressions = 0
+
+        if (jsonPlatform === 'twitter') {
+          reposts = Number(getField(item, 'retweet', 'reposts', 'shares')) || 0
+          impressions = Number(getField(item, 'impressions', 'views')) || 0
+        } else if (jsonPlatform === 'instagram') {
+          shares = Number(getField(item, 'shares', 'sends')) || 0
+          impressions = Number(getField(item, 'impressions', 'views', 'reach')) || 0
+        } else if (jsonPlatform === 'telegram') {
+          reactions = Number(getField(item, 'reactions', 'emoji_reactions')) || 0
+          shares = Number(getField(item, 'shares', 'forwards')) || 0
+          impressions = Number(getField(item, 'views', 'impressions')) || 0
+        }
+
+        const engagements = likes + reposts + comments + shares + reactions
+        const engagementRate = impressions > 0 ? ((engagements / impressions) * 100).toFixed(2) : null
 
         return {
           client_id: clientId,
-          platform: 'twitter',
+          platform: jsonPlatform,
           post_date: postDate,
           post_time: postTime,
-          post_url: item.link || null,
-          post_text: null,
+          post_url: postUrl,
+          post_text: getField(item, 'text', 'caption', 'message') || null,
           media_type: null,
           likes,
           reposts,
           comments,
-          shares: 0,
-          reactions: 0,
-          impressions: 0,
+          shares,
+          reactions,
+          impressions,
           engagements,
-          engagement_rate: null,
+          engagement_rate: engagementRate ? Number(engagementRate) : null,
         }
       })
 
@@ -143,7 +166,7 @@ export default function Upload() {
         inserted += batch.length
       }
 
-      showMessage('success', `Successfully imported ${inserted} posts!`)
+      showMessage('success', `Successfully imported ${inserted} ${jsonPlatform} posts!`)
       setJsonInput('')
       setJsonPreview([])
     } catch (err: any) {
@@ -559,14 +582,33 @@ export default function Upload() {
       {activeTab === 'import-json' && (
         <div className="space-y-6">
           <div className="card">
-            <h3 className="font-display text-lg font-medium text-navy mb-2">Import X Posts from JSON</h3>
+            <h3 className="font-display text-lg font-medium text-navy mb-2">Import Posts from JSON</h3>
             <p className="text-sm text-text-secondary mb-4">
-              Paste your JSON array here. Expected format: <code className="bg-cream px-1 py-0.5 rounded text-xs">[&#123; link, date, reply, retweet, like &#125;]</code>
+              Paste your JSON array here. Supports Twitter, Instagram, and Telegram data.
             </p>
+
+            <div className="mb-4">
+              <label className="label">Platform</label>
+              <select
+                value={jsonPlatform}
+                onChange={(e) => setJsonPlatform(e.target.value as 'twitter' | 'instagram' | 'telegram')}
+                className="input-field"
+              >
+                <option value="twitter">Twitter / X</option>
+                <option value="instagram">Instagram</option>
+                <option value="telegram">Telegram</option>
+              </select>
+            </div>
+
             <textarea
               value={jsonInput}
               onChange={(e) => setJsonInput(e.target.value)}
-              placeholder={`[\n  {\n    "link": "https://x.com/sandmark_news/status/...",\n    "date": "2026-05-15T02:58:04.000Z",\n    "reply": 0,\n    "retweet": 0,\n    "like": 3\n  }\n]`}
+              placeholder={jsonPlatform === 'twitter'
+                ? `[\n  {\n    "link": "https://x.com/sandmark_news/status/...",\n    "date": "2026-05-15T02:58:04.000Z",\n    "reply": 0,\n    "retweet": 0,\n    "like": 3\n  }\n]`
+                : jsonPlatform === 'instagram'
+                ? `[\n  {\n    "url": "https://instagram.com/p/...",\n    "timestamp": "2026-05-15T02:58:04.000Z",\n    "comments": 5,\n    "shares": 2,\n    "likes": 10\n  }\n]`
+                : `[\n  {\n    "link": "https://t.me/sandmark/123",\n    "date": "2026-05-15T02:58:04.000Z",\n    "views": 100,\n    "reactions": 5,\n    "forwards": 3\n  }\n]`
+              }
               className="input-field min-h-[200px] font-mono text-xs resize-none"
             />
             <div className="flex gap-3 mt-4">
@@ -583,7 +625,7 @@ export default function Upload() {
                 className="btn-primary disabled:opacity-50"
               >
                 {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <FileJson className="w-4 h-4" />}
-                Import {jsonPreview.length > 0 ? 'All Posts' : 'Posts'}
+                Import {jsonPreview.length > 0 ? `All ${jsonPlatform.charAt(0).toUpperCase() + jsonPlatform.slice(1)} Posts` : 'Posts'}
               </button>
             </div>
           </div>
@@ -597,7 +639,9 @@ export default function Upload() {
                     <tr className="border-b border-navy/5">
                       <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2 pr-4">Date</th>
                       <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2 pr-4">Likes</th>
-                      <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2 pr-4">Reposts</th>
+                      {jsonPlatform === 'twitter' && <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2 pr-4">Reposts</th>}
+                      {jsonPlatform === 'instagram' && <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2 pr-4">Shares</th>}
+                      {jsonPlatform === 'telegram' && <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2 pr-4">Reactions</th>}
                       <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2 pr-4">Comments</th>
                       <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2">Link</th>
                     </tr>
@@ -605,11 +649,15 @@ export default function Upload() {
                   <tbody className="divide-y divide-navy/5">
                     {jsonPreview.map((item, i) => (
                       <tr key={i}>
-                        <td className="py-2 pr-4 text-text-primary whitespace-nowrap">{new Date(item.date).toLocaleDateString()}</td>
-                        <td className="py-2 pr-4 text-text-primary">{item.like}</td>
-                        <td className="py-2 pr-4 text-text-primary">{item.retweet}</td>
-                        <td className="py-2 pr-4 text-text-primary">{item.reply}</td>
-                        <td className="py-2 text-text-primary truncate max-w-[200px]">{item.link}</td>
+                        <td className="py-2 pr-4 text-text-primary whitespace-nowrap">
+                          {new Date(getField(item, 'date', 'timestamp', 'created_at') || Date.now()).toLocaleDateString()}
+                        </td>
+                        <td className="py-2 pr-4 text-text-primary">{getField(item, 'like', 'likes') || 0}</td>
+                        {jsonPlatform === 'twitter' && <td className="py-2 pr-4 text-text-primary">{getField(item, 'retweet', 'reposts', 'shares') || 0}</td>}
+                        {jsonPlatform === 'instagram' && <td className="py-2 pr-4 text-text-primary">{getField(item, 'shares', 'sends') || 0}</td>}
+                        {jsonPlatform === 'telegram' && <td className="py-2 pr-4 text-text-primary">{getField(item, 'reactions', 'emoji_reactions') || 0}</td>}
+                        <td className="py-2 pr-4 text-text-primary">{getField(item, 'reply', 'replies', 'comments') || 0}</td>
+                        <td className="py-2 text-text-primary truncate max-w-[200px]">{getField(item, 'link', 'url', 'post_url') || '—'}</td>
                       </tr>
                     ))}
                   </tbody>
