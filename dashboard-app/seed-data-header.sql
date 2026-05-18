@@ -1,9 +1,0 @@
--- ReplyGuyz Seed Data
--- Run these files IN ORDER in Supabase SQL Editor:
--- 1. supabase-setup.sql (creates tables + RLS)
--- 2. seed-data-part1.sql through seed-data-partN.sql (inserts data)
--- 
--- If you get "relation X does not exist" errors, the previous SQL file
--- may have been truncated. Try running smaller chunks.
---
--- Total: ~742 posts, 14 daily metrics, 133 engagement orders

@@ -1,10 +1,23 @@
 import { createClient } from '@supabase/supabase-js'
 import { Database } from './database.types'
 
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || ''
+declare global {
+  interface Window {
+    ENV?: {
+      VITE_SUPABASE_URL?: string
+      VITE_SUPABASE_ANON_KEY?: string
+    }
+  }
+}
 
-if (!supabaseUrl || !supabaseAnonKey) {
+// Support runtime env vars via window.ENV (for static deployments)
+// Falls back to Vite build-time env vars, then placeholders
+const supabaseUrl = window.ENV?.VITE_SUPABASE_URL || (import.meta as any).env?.VITE_SUPABASE_URL || ''
+const supabaseAnonKey = window.ENV?.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || ''
+
+const isConfigured = supabaseUrl && supabaseUrl !== 'https://placeholder.supabase.co' && supabaseAnonKey && supabaseAnonKey !== 'placeholder-key'
+
+if (!isConfigured) {
   console.warn('Supabase environment variables not set. Dashboard will show mock data only.')
 }
 

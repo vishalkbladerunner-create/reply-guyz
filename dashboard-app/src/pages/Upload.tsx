@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { UploadCloud, FileSpreadsheet, AlertCircle, CheckCircle, X, Plus, Link2, BarChart3 } from 'lucide-react'
+import { UploadCloud, FileSpreadsheet, AlertCircle, CheckCircle, X, Plus, Link2, BarChart3, FileJson } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 
@@ -11,7 +11,15 @@ interface FilePreview {
   type: 'daily_metrics' | 'posts' | 'engagement_orders'
 }
 
-type Tab = 'upload' | 'daily-metrics' | 'posts' | 'engagement-orders'
+type Tab = 'upload' | 'daily-metrics' | 'posts' | 'engagement-orders' | 'import-json'
+
+interface JsonPost {
+  link: string
+  date: string
+  reply: number
+  retweet: number
+  like: number
+}
 
 export default function Upload() {
   const [activeTab, setActiveTab] = useState<Tab>('daily-metrics')
@@ -19,6 +27,8 @@ export default function Upload() {
   const [previews, setPreviews] = useState<FilePreview[]>([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [jsonInput, setJsonInput] = useState('')
+  const [jsonPreview, setJsonPreview] = useState<JsonPost[]>([])
 
   const [dailyMetric, setDailyMetric] = useState({
     platform: 'twitter',
@@ -66,6 +76,80 @@ export default function Upload() {
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text })
     setTimeout(() => setMessage(null), 5000)
+  }
+
+  const parseJsonInput = () => {
+    try {
+      const data = JSON.parse(jsonInput)
+      if (!Array.isArray(data)) {
+        showMessage('error', 'JSON must be an array of post objects')
+        setJsonPreview([])
+        return
+      }
+      setJsonPreview(data.slice(0, 5))
+      showMessage('success', `Parsed ${data.length} posts. Showing first 5 preview.`)
+    } catch (err: any) {
+      showMessage('error', 'Invalid JSON: ' + err.message)
+      setJsonPreview([])
+    }
+  }
+
+  const importJsonPosts = async () => {
+    setLoading(true)
+    try {
+      const data: JsonPost[] = JSON.parse(jsonInput)
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error('JSON must be a non-empty array')
+      }
+
+      const clientId = await getClientId()
+      if (!clientId) throw new Error('Client not found')
+
+      const posts = data.map((item) => {
+        const dateObj = new Date(item.date)
+        const postDate = dateObj.toISOString().split('T')[0]
+        const postTime = dateObj.toISOString().split('T')[1].replace('Z', '').substring(0, 8)
+        const likes = Number(item.like) || 0
+        const reposts = Number(item.retweet) || 0
+        const comments = Number(item.reply) || 0
+        const engagements = likes + reposts + comments
+
+        return {
+          client_id: clientId,
+          platform: 'twitter',
+          post_date: postDate,
+          post_time: postTime,
+          post_url: item.link || null,
+          post_text: null,
+          media_type: null,
+          likes,
+          reposts,
+          comments,
+          shares: 0,
+          reactions: 0,
+          impressions: 0,
+          engagements,
+          engagement_rate: null,
+        }
+      })
+
+      // Insert in batches of 50 to avoid request size limits
+      const batchSize = 50
+      let inserted = 0
+      for (let i = 0; i < posts.length; i += batchSize) {
+        const batch = posts.slice(i, i + batchSize)
+        const { error } = await supabase.from('posts').insert(batch as any)
+        if (error) throw error
+        inserted += batch.length
+      }
+
+      showMessage('success', `Successfully imported ${inserted} posts!`)
+      setJsonInput('')
+      setJsonPreview([])
+    } catch (err: any) {
+      showMessage('error', err.message || 'Failed to import posts')
+    }
+    setLoading(false)
   }
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -233,6 +317,7 @@ export default function Upload() {
     { key: 'daily-metrics' as Tab, label: 'Daily Metrics', icon: BarChart3 },
     { key: 'posts' as Tab, label: 'Add Post', icon: Plus },
     { key: 'engagement-orders' as Tab, label: 'Engagement Order', icon: Link2 },
+    { key: 'import-json' as Tab, label: 'Import JSON', icon: FileJson },
     { key: 'upload' as Tab, label: 'Upload CSV/Excel', icon: UploadCloud },
   ]
 
@@ -468,6 +553,70 @@ export default function Upload() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {activeTab === 'import-json' && (
+        <div className="space-y-6">
+          <div className="card">
+            <h3 className="font-display text-lg font-medium text-navy mb-2">Import X Posts from JSON</h3>
+            <p className="text-sm text-text-secondary mb-4">
+              Paste your JSON array here. Expected format: <code className="bg-cream px-1 py-0.5 rounded text-xs">[&#123; link, date, reply, retweet, like &#125;]</code>
+            </p>
+            <textarea
+              value={jsonInput}
+              onChange={(e) => setJsonInput(e.target.value)}
+              placeholder={`[\n  {\n    "link": "https://x.com/sandmark_news/status/...",\n    "date": "2026-05-15T02:58:04.000Z",\n    "reply": 0,\n    "retweet": 0,\n    "like": 3\n  }\n]`}
+              className="input-field min-h-[200px] font-mono text-xs resize-none"
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={parseJsonInput}
+                disabled={!jsonInput.trim() || loading}
+                className="btn-secondary disabled:opacity-50"
+              >
+                Preview
+              </button>
+              <button
+                onClick={importJsonPosts}
+                disabled={jsonPreview.length === 0 || loading}
+                className="btn-primary disabled:opacity-50"
+              >
+                {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <FileJson className="w-4 h-4" />}
+                Import {jsonPreview.length > 0 ? 'All Posts' : 'Posts'}
+              </button>
+            </div>
+          </div>
+
+          {jsonPreview.length > 0 && (
+            <div className="card">
+              <h3 className="font-display text-lg font-medium text-navy mb-4">Preview (first 5)</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-navy/5">
+                      <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2 pr-4">Date</th>
+                      <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2 pr-4">Likes</th>
+                      <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2 pr-4">Reposts</th>
+                      <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2 pr-4">Comments</th>
+                      <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-2">Link</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-navy/5">
+                    {jsonPreview.map((item, i) => (
+                      <tr key={i}>
+                        <td className="py-2 pr-4 text-text-primary whitespace-nowrap">{new Date(item.date).toLocaleDateString()}</td>
+                        <td className="py-2 pr-4 text-text-primary">{item.like}</td>
+                        <td className="py-2 pr-4 text-text-primary">{item.retweet}</td>
+                        <td className="py-2 pr-4 text-text-primary">{item.reply}</td>
+                        <td className="py-2 text-text-primary truncate max-w-[200px]">{item.link}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
