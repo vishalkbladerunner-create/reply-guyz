@@ -1,14 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 import { Database } from './database.types'
 
-const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || ''
+const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || ''
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+  console.warn('Supabase environment variables not set. Dashboard will show mock data only.')
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient<Database>(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key'
+)
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Client = Database['public']['Tables']['clients']['Row']
