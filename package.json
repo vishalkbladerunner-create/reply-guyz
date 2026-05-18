@@ -2,7 +2,7 @@
   "name": "reply-guyz",
   "private": true,
   "scripts": {
-    "build": "cd dashboard-app && npm install && npm run build && mkdir -p ../dashboard && cp -r dist/* ../dashboard/",
+    "build": "cd dashboard-app && npm install && npm run build && cd .. && mkdir -p public/dashboard && cp -r dashboard-app/dist/* public/dashboard/ && cp index.html styles.css script.js public/ 2>/dev/null || true && cp *.png *.jpg *.jpeg public/ 2>/dev/null || true",
     "dev": "cd dashboard-app && npm run dev"
   }
 }
