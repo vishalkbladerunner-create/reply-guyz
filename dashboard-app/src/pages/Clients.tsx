@@ -1,33 +1,72 @@
 import { useState } from 'react'
 import { useClient } from '@/hooks/useClient'
-import { supabase } from '@/lib/supabase'
-import { Building2, Plus, Twitter, Instagram, Send, Globe, CheckCircle, AlertCircle, X, Loader2 } from 'lucide-react'
+import { supabase, type Client } from '@/lib/supabase'
+import { Building2, Plus, Twitter, Instagram, Send, Globe, CheckCircle, AlertCircle, X, Loader2, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+const PLATFORM_OPTIONS = ['twitter', 'instagram', 'telegram'] as const
+
+const platformIcons = {
+  twitter: Twitter,
+  instagram: Instagram,
+  telegram: Send,
+}
+
+const platformColors = {
+  twitter: 'bg-sky-50 text-sky-700 border-sky-200',
+  instagram: 'bg-pink-50 text-pink-700 border-pink-200',
+  telegram: 'bg-blue-50 text-blue-700 border-blue-200',
+}
+
+const emptyForm = {
+  name: '',
+  slug: '',
+  twitter_handle: '',
+  instagram_handle: '',
+  telegram_handle: '',
+  website: '',
+  description: '',
+  active_platforms: ['twitter'] as string[],
+}
+
+function generateSlug(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
 
 export default function Clients() {
   const { clients, refreshClients } = useClient()
   const [showForm, setShowForm] = useState(false)
+  const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [deletingClient, setDeletingClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  const [form, setForm] = useState({
-    name: '',
-    slug: '',
-    twitter_handle: '',
-    instagram_handle: '',
-    telegram_handle: '',
-    website: '',
-    description: '',
-    active_platforms: ['twitter'] as string[],
-  })
+  const [form, setForm] = useState(emptyForm)
 
   const showMsg = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text })
     setTimeout(() => setMessage(null), 4000)
   }
 
-  const generateSlug = (name: string) => {
-    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const resetForm = () => {
+    setForm(emptyForm)
+    setEditingClient(null)
+    setShowForm(false)
+  }
+
+  const startEdit = (client: Client) => {
+    setForm({
+      name: client.name || '',
+      slug: client.slug || '',
+      twitter_handle: client.twitter_handle || '',
+      instagram_handle: client.instagram_handle || '',
+      telegram_handle: client.telegram_handle || '',
+      website: client.website || '',
+      description: client.description || '',
+      active_platforms: client.active_platforms || ['twitter'],
+    })
+    setEditingClient(client)
+    setShowForm(true)
   }
 
   const togglePlatform = (platform: string) => {
@@ -52,7 +91,8 @@ export default function Clients() {
 
     setLoading(true)
     const slug = form.slug.trim() || generateSlug(form.name)
-    const { error } = await supabase.from('clients').insert({
+
+    const payload = {
       name: form.name.trim(),
       slug,
       twitter_handle: form.twitter_handle.trim() || null,
@@ -62,38 +102,46 @@ export default function Clients() {
       description: form.description.trim() || null,
       active_platforms: form.active_platforms,
       platform: form.active_platforms[0],
-    } as any)
+    }
 
-    if (error) {
-      showMsg('error', error.message)
+    if (editingClient) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('clients') as any).update(payload).eq('id', editingClient.id)
+
+      if (error) {
+        showMsg('error', error.message)
+      } else {
+        showMsg('success', 'Company updated successfully!')
+        resetForm()
+        refreshClients()
+      }
     } else {
-      showMsg('success', 'Company created successfully!')
-      setForm({
-        name: '',
-        slug: '',
-        twitter_handle: '',
-        instagram_handle: '',
-        telegram_handle: '',
-        website: '',
-        description: '',
-        active_platforms: ['twitter'],
-      })
-      setShowForm(false)
-      refreshClients()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('clients') as any).insert(payload)
+
+      if (error) {
+        showMsg('error', error.message)
+      } else {
+        showMsg('success', 'Company created successfully!')
+        resetForm()
+        refreshClients()
+      }
     }
     setLoading(false)
   }
 
-  const platformIcons = {
-    twitter: Twitter,
-    instagram: Instagram,
-    telegram: Send,
-  }
-
-  const platformColors = {
-    twitter: 'bg-sky-50 text-sky-700 border-sky-200',
-    instagram: 'bg-pink-50 text-pink-700 border-pink-200',
-    telegram: 'bg-blue-50 text-blue-700 border-blue-200',
+  const handleDelete = async () => {
+    if (!deletingClient) return
+    setLoading(true)
+    const { error } = await supabase.from('clients').delete().eq('id', deletingClient.id)
+    if (error) {
+      showMsg('error', error.message)
+    } else {
+      showMsg('success', `${deletingClient.name} deleted successfully!`)
+      refreshClients()
+    }
+    setDeletingClient(null)
+    setLoading(false)
   }
 
   return (
@@ -101,10 +149,10 @@ export default function Clients() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-3xl font-medium text-navy">Manage Clients</h1>
-          <p className="text-text-secondary mt-1">Add and manage companies & their analytics platforms</p>
+          <p className="text-text-secondary mt-1">Add, edit, and manage companies & their analytics platforms</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => { resetForm(); setShowForm(!showForm) }}
           className="btn-primary"
         >
           {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -123,7 +171,9 @@ export default function Clients() {
 
       {showForm && (
         <div className="card">
-          <h2 className="font-display text-lg font-medium text-navy mb-6">Add New Company</h2>
+          <h2 className="font-display text-lg font-medium text-navy mb-6">
+            {editingClient ? `Edit ${editingClient.name}` : 'Add New Company'}
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
@@ -133,7 +183,7 @@ export default function Clients() {
                   required
                   value={form.name}
                   onChange={(e) => {
-                    setForm({ ...form, name: e.target.value, slug: generateSlug(e.target.value) })
+                    setForm({ ...form, name: e.target.value, slug: editingClient ? form.slug : generateSlug(e.target.value) })
                   }}
                   className="input-field"
                   placeholder="Sandmark"
@@ -141,7 +191,7 @@ export default function Clients() {
               </div>
 
               <div>
-                <label className="label">Slug (auto-generated)</label>
+                <label className="label">Slug</label>
                 <input
                   type="text"
                   value={form.slug}
@@ -208,7 +258,7 @@ export default function Clients() {
               <div className="sm:col-span-2">
                 <label className="label">Active Platforms *</label>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {(['twitter', 'instagram', 'telegram'] as const).map((platform) => {
+                  {PLATFORM_OPTIONS.map((platform) => {
                     const isActive = form.active_platforms.includes(platform)
                     const Icon = platformIcons[platform]
                     return (
@@ -230,11 +280,16 @@ export default function Clients() {
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 flex items-center gap-3">
               <button type="submit" disabled={loading} className="btn-primary disabled:opacity-50">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Building2 className="w-4 h-4" />}
-                Create Company
+                {editingClient ? 'Update Company' : 'Create Company'}
               </button>
+              {editingClient && (
+                <button type="button" onClick={resetForm} className="btn-secondary">
+                  Cancel
+                </button>
+              )}
             </div>
           </form>
         </div>
@@ -243,21 +298,39 @@ export default function Clients() {
       {/* Clients List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {clients.map((client) => (
-          <div key={client.id} className="card hover:shadow-md transition-shadow">
+          <div key={client.id} className="card hover:shadow-md transition-shadow group">
             <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="font-display text-lg font-medium text-navy">{client.name}</h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-display text-lg font-medium text-navy truncate">{client.name}</h3>
                 <p className="text-xs text-text-muted">@{client.slug}</p>
               </div>
-              <div className="flex gap-1">
-                {client.active_platforms?.map((platform: string) => {
-                  const Icon = platformIcons[platform as keyof typeof platformIcons]
-                  return Icon ? (
-                    <span key={platform} className={cn('p-1.5 rounded-lg border', platformColors[platform as keyof typeof platformColors])}>
-                      <Icon className="w-3.5 h-3.5" />
-                    </span>
-                  ) : null
-                })}
+              <div className="flex items-center gap-2 ml-2">
+                <div className="flex gap-1">
+                  {client.active_platforms?.map((platform: string) => {
+                    const Icon = platformIcons[platform as keyof typeof platformIcons]
+                    return Icon ? (
+                      <span key={platform} className={cn('p-1.5 rounded-lg border', platformColors[platform as keyof typeof platformColors])}>
+                        <Icon className="w-3.5 h-3.5" />
+                      </span>
+                    ) : null
+                  })}
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => startEdit(client as Client)}
+                    className="p-1.5 rounded-lg bg-cream hover:bg-blue-accent/10 hover:text-blue-accent text-text-muted transition-colors"
+                    title="Edit company"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setDeletingClient(client as Client)}
+                    className="p-1.5 rounded-lg bg-cream hover:bg-red-50 hover:text-red-600 text-text-muted transition-colors"
+                    title="Delete company"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -304,6 +377,31 @@ export default function Clients() {
             <Plus className="w-4 h-4" />
             Add Company
           </button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-navy/30 backdrop-blur-sm" onClick={() => setDeletingClient(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <h3 className="font-display text-lg font-medium text-navy mb-2">Delete Company</h3>
+            <p className="text-text-secondary mb-1">
+              Are you sure you want to delete <strong className="text-navy">{deletingClient.name}</strong>?
+            </p>
+            <p className="text-sm text-red-500 mb-6">
+              This will permanently remove the company and all associated data (posts, metrics, orders, profiles). This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setDeletingClient(null)} className="btn-secondary" disabled={loading}>
+                Cancel
+              </button>
+              <button onClick={handleDelete} className="btn-primary bg-red-600 hover:bg-red-700 disabled:opacity-50" disabled={loading}>
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
