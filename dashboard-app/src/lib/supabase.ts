@@ -23,7 +23,15 @@ if (!isConfigured) {
 
 export const supabase = createClient<Database>(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: true,
+      storageKey: 'replyguyz-auth-token',
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
 )
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
