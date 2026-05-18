@@ -5,7 +5,7 @@ import { Eye, EyeOff, Loader2, TrendingUp } from 'lucide-react'
 
 export default function Login() {
   const navigate = useNavigate()
-  const { signIn, signUp } = useAuth()
+  const { user, loading: authLoading, isApproved, signIn, signUp } = useAuth()
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,6 +30,13 @@ export default function Login() {
       window.history.replaceState(null, '', window.location.pathname + window.location.search)
     }
   }, [])
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && user && isApproved) {
+      navigate('/', { replace: true })
+    }
+  }, [authLoading, user, isApproved, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

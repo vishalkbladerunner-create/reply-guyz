@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { startSessionRefresh, stopSessionRefresh } from '@/lib/supabase'
 import { Loader2, Mail } from 'lucide-react'
 
 interface AuthGuardProps {
@@ -11,10 +13,22 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
   const { user, loading, isApproved, isAdmin } = useAuth()
   const location = useLocation()
 
+  useEffect(() => {
+    if (user && isApproved) {
+      startSessionRefresh()
+    }
+    return () => {
+      stopSessionRefresh()
+    }
+  }, [user, isApproved])
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream">
-        <Loader2 className="w-8 h-8 text-blue-accent animate-spin" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-blue-accent animate-spin mx-auto mb-3" />
+          <p className="text-sm text-text-muted">Verifying session...</p>
+        </div>
       </div>
     )
   }
@@ -23,7 +37,6 @@ export default function AuthGuard({ children, requireAdmin = false }: AuthGuardP
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // Show pending approval screen for unapproved users
   if (!isApproved) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream p-4">

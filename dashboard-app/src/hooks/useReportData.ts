@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase, type Post, type DailyMetric } from '@/lib/supabase'
 import { type DateRange, getDateRangeValue } from '@/components/DateRangePicker'
 import { subDays, differenceInDays } from 'date-fns'
@@ -50,6 +50,7 @@ export function useReportData(clientId: string | null, dateRange: DateRange): Re
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const abortRef = useRef<AbortController | null>(null)
 
   const refresh = () => setRefreshKey((k) => k + 1)
 
@@ -58,6 +59,10 @@ export function useReportData(clientId: string | null, dateRange: DateRange): Re
       setLoading(false)
       return
     }
+
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
 
     setLoading(true)
     setError(null)
@@ -96,18 +101,24 @@ export function useReportData(clientId: string | null, dateRange: DateRange): Re
         .order('metric_date'),
     ])
       .then(([curRes, prevRes, metricsRes]) => {
+        if (controller.signal.aborted) return
         if (curRes.error) setError(curRes.error.message)
         else setPosts((curRes.data || []) as Post[])
-        if (prevRes.error && !error) setError(prevRes.error.message)
+        if (prevRes.error) setError(prevRes.error.message)
         else setPreviousPosts((prevRes.data || []) as Post[])
-        if (metricsRes.error && !error) setError(metricsRes.error.message)
+        if (metricsRes.error) setError(metricsRes.error.message)
         else setDailyMetrics((metricsRes.data || []) as DailyMetric[])
         setLoading(false)
       })
       .catch((err) => {
-        setError(err.message)
+        if (controller.signal.aborted) return
+        setError(err?.message || 'Failed to fetch report data')
         setLoading(false)
       })
+
+    return () => {
+      controller.abort()
+    }
   }, [clientId, dateRange, refreshKey])
 
   const currentStats = useMemo(() => computeStats(posts, dailyMetrics), [posts, dailyMetrics])

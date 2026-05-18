@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase, type EngagementOrder } from '@/lib/supabase'
 
 interface OrdersData {
@@ -17,6 +17,7 @@ export function useEngagementOrders(clientId: string | null, filters?: {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const abortRef = useRef<AbortController | null>(null)
 
   const refresh = () => setRefreshKey((k) => k + 1)
 
@@ -25,6 +26,10 @@ export function useEngagementOrders(clientId: string | null, filters?: {
       setLoading(false)
       return
     }
+
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
 
     setLoading(true)
     setError(null)
@@ -41,9 +46,10 @@ export function useEngagementOrders(clientId: string | null, filters?: {
       query = query.eq('status', filters.status)
     }
 
-    query
+    ;(query as any)
       .order('order_date', { ascending: false })
-      .then(({ data, error: err }) => {
+      .then(({ data, error: err }: { data: any; error: any }) => {
+        if (controller.signal.aborted) return
         if (err) {
           setError(err.message)
         } else {
@@ -51,6 +57,10 @@ export function useEngagementOrders(clientId: string | null, filters?: {
         }
         setLoading(false)
       })
+
+    return () => {
+      controller.abort()
+    }
   }, [clientId, filters?.platform, filters?.status, refreshKey])
 
   return { orders, loading, error, refresh }

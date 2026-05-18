@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useAuth } from './useAuth'
 import { supabase } from '@/lib/supabase'
 
@@ -6,6 +6,7 @@ interface ClientContextType {
   selectedClientId: string | null
   clients: { id: string; name: string; slug: string; platform: string | null; twitter_handle: string | null; instagram_handle: string | null; telegram_handle: string | null; website: string | null; description: string | null; active_platforms: string[] | null }[]
   loading: boolean
+  error: string | null
   setSelectedClientId: (id: string | null) => void
   refreshClients: () => Promise<void>
 }
@@ -17,20 +18,34 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const [clients, setClients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const fetchClients = async () => {
-    const { data } = await supabase.from('clients').select('*').order('name')
-    setClients((data as any) || [])
+  const fetchClients = useCallback(async () => {
+    setError(null)
+    try {
+      const { data, error: fetchErr } = await supabase.from('clients').select('*').order('name')
+      if (fetchErr) {
+        console.error('useClient fetch error:', fetchErr.message)
+        setError(fetchErr.message)
+        setClients([])
+      } else {
+        setClients((data || []) as any)
+        setError(null)
+      }
+    } catch (err: any) {
+      console.error('useClient fetch exception:', err)
+      setError(err?.message || 'Failed to load clients')
+      setClients([])
+    }
     setLoading(false)
-  }
+  }, [])
 
   useEffect(() => {
     if (!authLoading) {
       fetchClients()
     }
-  }, [authLoading])
+  }, [authLoading, fetchClients])
 
-  // Auto-select client for non-admin users
   useEffect(() => {
     if (user && !isAdmin && user.client_id) {
       setSelectedClientId(user.client_id)
@@ -43,6 +58,7 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
         selectedClientId,
         clients,
         loading,
+        error,
         setSelectedClientId,
         refreshClients: fetchClients,
       }}

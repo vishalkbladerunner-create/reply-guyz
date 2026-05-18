@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase, type Post, type DailyMetric, type EngagementOrder } from '@/lib/supabase'
 import { type DateRange, getDateRangeValue } from '@/components/DateRangePicker'
 
@@ -18,6 +18,7 @@ export function useDashboardData(clientId: string | null, dateRange: DateRange, 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const abortRef = useRef<AbortController | null>(null)
 
   const refresh = () => setRefreshKey((k) => k + 1)
 
@@ -27,13 +28,16 @@ export function useDashboardData(clientId: string | null, dateRange: DateRange, 
       return
     }
 
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setLoading(true)
     setError(null)
 
     const { start, end } = getDateRangeValue(dateRange)
     const startStr = start.toISOString().split('T')[0]
     const endStr = end.toISOString().split('T')[0]
-
     const platformsFilter = activePlatforms?.length ? activePlatforms : ['twitter', 'instagram', 'telegram']
 
     Promise.all([
@@ -59,18 +63,24 @@ export function useDashboardData(clientId: string | null, dateRange: DateRange, 
         .order('order_date', { ascending: false }),
     ])
       .then(([postsRes, metricsRes, ordersRes]) => {
+        if (controller.signal.aborted) return
         if (postsRes.error) setError(postsRes.error.message)
         else setPosts((postsRes.data || []) as Post[])
-        if (metricsRes.error && !error) setError(metricsRes.error.message)
+        if (metricsRes.error) setError(metricsRes.error.message)
         else setDailyMetrics((metricsRes.data || []) as DailyMetric[])
-        if (ordersRes.error && !error) setError(ordersRes.error.message)
+        if (ordersRes.error) setError(ordersRes.error.message)
         else setEngagementOrders((ordersRes.data || []) as EngagementOrder[])
         setLoading(false)
       })
       .catch((err) => {
-        setError(err.message)
+        if (controller.signal.aborted) return
+        setError(err?.message || 'Failed to fetch data')
         setLoading(false)
       })
+
+    return () => {
+      controller.abort()
+    }
   }, [clientId, dateRange, refreshKey])
 
   return { posts, dailyMetrics, engagementOrders, loading, error, refresh }

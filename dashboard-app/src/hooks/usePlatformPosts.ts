@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase, type Post, type DailyMetric } from '@/lib/supabase'
 import { type DateRange, getDateRangeValue } from '@/components/DateRangePicker'
 
@@ -16,6 +16,7 @@ export function usePlatformPosts(clientId: string | null, platform: string, date
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const abortRef = useRef<AbortController | null>(null)
 
   const refresh = () => setRefreshKey((k) => k + 1)
 
@@ -24,6 +25,10 @@ export function usePlatformPosts(clientId: string | null, platform: string, date
       setLoading(false)
       return
     }
+
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
 
     setLoading(true)
     setError(null)
@@ -51,16 +56,22 @@ export function usePlatformPosts(clientId: string | null, platform: string, date
         .order('metric_date'),
     ])
       .then(([postsRes, metricsRes]) => {
+        if (controller.signal.aborted) return
         if (postsRes.error) setError(postsRes.error.message)
         else setPosts((postsRes.data || []) as Post[])
-        if (metricsRes.error && !error) setError(metricsRes.error.message)
+        if (metricsRes.error) setError(metricsRes.error.message)
         else setDailyMetrics((metricsRes.data || []) as DailyMetric[])
         setLoading(false)
       })
       .catch((err) => {
-        setError(err.message)
+        if (controller.signal.aborted) return
+        setError(err?.message || 'Failed to fetch data')
         setLoading(false)
       })
+
+    return () => {
+      controller.abort()
+    }
   }, [clientId, platform, dateRange, refreshKey])
 
   return { posts, dailyMetrics, loading, error, refresh }

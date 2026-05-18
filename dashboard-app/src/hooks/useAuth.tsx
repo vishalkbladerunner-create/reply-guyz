@@ -13,54 +13,114 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const SESSION_TIMEOUT_MS = 8000
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [initialSessionResolved, setInitialSessionResolved] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-        setUser(profile)
+      try {
+        const result = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>((_, reject) =>
+            setTimeout(() => reject(new Error('AUTH_TIMEOUT')), SESSION_TIMEOUT_MS)
+          ),
+        ])
+
+        if (result === null) {
+          console.warn('Supabase session fetch timed out')
+          return
+        }
+
+        const { data: { session } } = result as Awaited<ReturnType<typeof supabase.auth.getSession>>
+        if (!cancelled && session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+          if (!cancelled) setUser(profile)
+        }
+      } catch (err: any) {
+        if (err?.message === 'AUTH_TIMEOUT') {
+          console.warn('Supabase auth session fetch timed out after', SESSION_TIMEOUT_MS, 'ms')
+        } else {
+          console.error('getSession error:', err)
+        }
+      } finally {
+        if (!cancelled) {
+          setInitialSessionResolved(true)
+          setLoading(false)
+        }
       }
-      setLoading(false)
     }
+
     getSession()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) return
+
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setLoading(false)
+        setInitialSessionResolved(true)
+        return
+      }
+
+      if (event === 'TOKEN_REFRESHED' && session) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single()
-        setUser(profile)
-      } else {
-        setUser(null)
+        if (!cancelled && profile) setUser(profile)
+        return
       }
-      setLoading(false)
+
+      if (event === 'INITIAL_SESSION' && session?.user && !initialSessionResolved) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+        if (!cancelled) setUser(profile)
+        if (!cancelled) {
+          setInitialSessionResolved(true)
+          setLoading(false)
+        }
+      }
+
+      if (!session && event !== 'INITIAL_SESSION') {
+        if (!cancelled) {
+          setUser(null)
+          setInitialSessionResolved(true)
+          setLoading(false)
+        }
+      }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return { error }
-    
-    // Ensure profile exists (fallback if trigger wasn't set up or user was manually created)
+
     if (data.user) {
       const { data: existing, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .maybeSingle()
-      
+
       if (!existing || fetchError) {
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
@@ -73,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } as any)
           .select()
           .maybeSingle()
-        
+
         if (insertError) {
           console.error('Profile insert error:', insertError)
           return { error: new Error('Account profile missing. Please contact admin.') }
@@ -97,8 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     })
     if (error) return { error }
-    
-    // Manually create profile if trigger isn't working
+
     if (data.user) {
       const { data: existing } = await supabase.from('profiles').select('id').eq('id', data.user.id).single()
       if (!existing) {
