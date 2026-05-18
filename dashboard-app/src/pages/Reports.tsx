@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import { Download, FileText, Calendar, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useClient } from '@/hooks/useClient'
+import { supabase } from '@/lib/supabase'
+import { Download, FileText, Calendar, ChevronRight, Loader2 } from 'lucide-react'
 import KpiCards from '@/components/KpiCards'
 import LineChart from '@/components/Charts/LineChart'
 import BarChart from '@/components/Charts/BarChart'
@@ -12,36 +14,71 @@ const reportTypes = [
   { key: 'custom', label: 'Custom Date Range', description: 'Pick any date range to analyze' },
 ]
 
-const weeklyData = [
-  { date: '2026-04-28', impressions: 125000, engagements: 18500, likes: 3200, reposts: 4100, followers: 3520, posts: 180 },
-  { date: '2026-05-05', impressions: 132000, engagements: 19800, likes: 3450, reposts: 4350, followers: 3661, posts: 195 },
-]
-
-const monthlyData = [
-  { date: '2026-04-01', impressions: 520000, engagements: 78000, likes: 13500, reposts: 17200, followers: 3200, posts: 750 },
-  { date: '2026-05-01', impressions: 145000, engagements: 21800, likes: 3800, reposts: 4800, followers: 3661, posts: 210 },
-]
-
 export default function Reports() {
+  const { selectedClientId } = useClient()
   const [selectedType, setSelectedType] = useState('custom')
   const [dateRange, setDateRange] = useState<DateRange>({ preset: 'last7' })
+  const [metrics, setMetrics] = useState<any[]>([])
+  const [posts, setPosts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   const { start, end } = getDateRangeValue(dateRange)
   const isWeekly = selectedType === 'weekly'
   const isMonthly = selectedType === 'monthly'
 
-  let reportData = weeklyData
-  if (isMonthly) reportData = monthlyData
-  if (selectedType === 'custom') {
-    reportData = [
-      { date: format(start, 'yyyy-MM-dd'), impressions: 21646, engagements: 3288, likes: 520, reposts: 622, followers: 3661, posts: 34 },
-      { date: format(end, 'yyyy-MM-dd'), impressions: 11599, engagements: 2992, likes: 410, reposts: 658, followers: 3669, posts: 41 },
-    ]
+  useEffect(() => {
+    if (!selectedClientId) {
+      setLoading(false)
+      return
+    }
+    fetchData()
+  }, [selectedClientId, dateRange, selectedType])
+
+  const fetchData = async () => {
+    setLoading(true)
+    const startStr = start.toISOString().split('T')[0]
+    const endStr = end.toISOString().split('T')[0]
+
+    const [{ data: metricsData }, { data: postsData }] = await Promise.all([
+      supabase
+        .from('daily_metrics')
+        .select('*')
+        .eq('client_id', selectedClientId!)
+        .gte('metric_date', startStr)
+        .lte('metric_date', endStr)
+        .order('metric_date'),
+      supabase
+        .from('posts')
+        .select('*')
+        .eq('client_id', selectedClientId!)
+        .gte('post_date', startStr)
+        .lte('post_date', endStr),
+    ])
+
+    setMetrics(metricsData || [])
+    setPosts(postsData || [])
+    setLoading(false)
   }
 
-  const totalImpressions = reportData.reduce((sum, d) => sum + d.impressions, 0)
-  const totalEngagements = reportData.reduce((sum, d) => sum + d.engagements, 0)
-  const totalPosts = reportData.reduce((sum, d) => sum + d.posts, 0)
+  // Aggregate by date for charts
+  const dailyMap = new Map<string, any>()
+  metrics.forEach((m) => {
+    const existing = dailyMap.get(m.metric_date) || { impressions: 0, engagements: 0, likes: 0, reposts: 0, followers: 0, posts: 0 }
+    dailyMap.set(m.metric_date, {
+      impressions: existing.impressions + (m.impressions || 0),
+      engagements: existing.engagements + (m.engagements || 0),
+      likes: existing.likes + (m.likes || 0),
+      reposts: existing.reposts + (m.reposts || 0),
+      followers: m.net_followers || existing.followers,
+      posts: existing.posts + (m.posts_created || 0),
+    })
+  })
+  const sortedDates = Array.from(dailyMap.keys()).sort()
+  const reportData = sortedDates.map((d) => ({ date: d, ...dailyMap.get(d) }))
+
+  const totalImpressions = metrics.reduce((sum, d) => sum + (d.impressions || 0), 0)
+  const totalEngagements = metrics.reduce((sum, d) => sum + (d.engagements || 0), 0)
+  const totalPosts = posts.length
   const avgEngagementRate = totalImpressions > 0 ? ((totalEngagements / totalImpressions) * 100).toFixed(1) : '0'
 
   const kpis = [
@@ -57,8 +94,8 @@ export default function Reports() {
 
   const handleExport = () => {
     const csvContent = [
-      ['Date', 'Impressions', 'Engagements', 'Likes', 'Reposts', 'Followers', 'Posts'].join(','),
-      ...reportData.map((d) => [d.date, d.impressions, d.engagements, d.likes, d.reposts, d.followers, d.posts].join(',')),
+      ['Date', 'Impressions', 'Engagements', 'Likes', 'Reposts', 'Posts'].join(','),
+      ...reportData.map((d) => [d.date, d.impressions, d.engagements, d.likes, d.reposts, d.posts].join(',')),
     ].join('\n')
 
     const blob = new Blob([csvContent], { type: 'text/csv' })
@@ -68,6 +105,25 @@ export default function Reports() {
     a.download = `report-${selectedType}-${format(new Date(), 'yyyy-MM-dd')}.csv`
     a.click()
     window.URL.revokeObjectURL(url)
+  }
+
+  if (!selectedClientId) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="font-display text-xl font-medium text-navy mb-2">Select a Client</h2>
+          <p className="text-text-secondary">Choose a company from the sidebar to generate reports.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-blue-accent animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -134,55 +190,69 @@ export default function Reports() {
 
       <KpiCards kpis={kpis} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="font-display text-lg font-medium text-navy mb-4">Impressions & Engagements</h3>
-          <LineChart
-            labels={dates}
-            datasets={[
-              { label: 'Impressions', data: impressionsData, color: '#4479e1' },
-              { label: 'Engagements', data: engagementsData, color: '#1a2332' },
-            ]}
-          />
+      {metrics.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-text-muted">No data yet for this period.</p>
+          <p className="text-text-muted text-sm mt-1">Upload data via Data Entry to generate reports.</p>
         </div>
-        <div className="card">
-          <h3 className="font-display text-lg font-medium text-navy mb-4">Engagement Breakdown</h3>
-          <BarChart
-            labels={['Likes', 'Reposts', 'Comments', 'Shares']}
-            datasets={[
-              { label: 'Current Period', data: [3200, 1500, 450, 320], color: '#4479e1' },
-              { label: 'Previous Period', data: [2800, 1200, 380, 280], color: '#6b8cae' },
-            ]}
-            title="Engagement Types"
-          />
-        </div>
-      </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card">
+              <h3 className="font-display text-lg font-medium text-navy mb-4">Impressions & Engagements</h3>
+              <LineChart
+                labels={dates}
+                datasets={[
+                  { label: 'Impressions', data: impressionsData, color: '#4479e1' },
+                  { label: 'Engagements', data: engagementsData, color: '#1a2332' },
+                ]}
+              />
+            </div>
+            <div className="card">
+              <h3 className="font-display text-lg font-medium text-navy mb-4">Engagement Breakdown</h3>
+              <BarChart
+                labels={['Likes', 'Reposts', 'Comments', 'Shares']}
+                datasets={[
+                  { label: 'Current Period', data: [
+                    metrics.reduce((s, m) => s + (m.likes || 0), 0),
+                    metrics.reduce((s, m) => s + (m.reposts || 0), 0),
+                    metrics.reduce((s, m) => s + (m.replies || 0), 0),
+                    metrics.reduce((s, m) => s + (m.shares || 0), 0),
+                  ], color: '#4479e1' },
+                  { label: 'Previous Period', data: [0, 0, 0, 0], color: '#6b8cae' },
+                ]}
+                title="Engagement Types"
+              />
+            </div>
+          </div>
 
-      <div className="card">
-        <h3 className="font-display text-lg font-medium text-navy mb-4">Report Summary</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-navy/5">
-            <span className="text-text-secondary">Report Type</span>
-            <span className="font-medium text-navy capitalize">{selectedType} Report</span>
+          <div className="card">
+            <h3 className="font-display text-lg font-medium text-navy mb-4">Report Summary</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-3 border-b border-navy/5">
+                <span className="text-text-secondary">Report Type</span>
+                <span className="font-medium text-navy capitalize">{selectedType} Report</span>
+              </div>
+              <div className="flex items-center justify-between py-3 border-b border-navy/5">
+                <span className="text-text-secondary">Period</span>
+                <span className="font-medium text-navy">{format(start, 'MMM d')} — {format(end, 'MMM d, yyyy')}</span>
+              </div>
+              <div className="flex items-center justify-between py-3 border-b border-navy/5">
+                <span className="text-text-secondary">Total Posts</span>
+                <span className="font-medium text-navy">{totalPosts}</span>
+              </div>
+              <div className="flex items-center justify-between py-3 border-b border-navy/5">
+                <span className="text-text-secondary">Avg Engagement Rate</span>
+                <span className="font-medium text-navy">{avgEngagementRate}%</span>
+              </div>
+              <div className="flex items-center justify-between py-3">
+                <span className="text-text-secondary">Net Follower Growth</span>
+                <span className="font-medium text-green-600">+{metrics[metrics.length - 1]?.net_followers || 0}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center justify-between py-3 border-b border-navy/5">
-            <span className="text-text-secondary">Period</span>
-            <span className="font-medium text-navy">{format(start, 'MMM d')} — {format(end, 'MMM d, yyyy')}</span>
-          </div>
-          <div className="flex items-center justify-between py-3 border-b border-navy/5">
-            <span className="text-text-secondary">Total Posts</span>
-            <span className="font-medium text-navy">{totalPosts}</span>
-          </div>
-          <div className="flex items-center justify-between py-3 border-b border-navy/5">
-            <span className="text-text-secondary">Avg Engagement Rate</span>
-            <span className="font-medium text-navy">{avgEngagementRate}%</span>
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <span className="text-text-secondary">Net Follower Growth</span>
-            <span className="font-medium text-green-600">+{reportData[reportData.length - 1]?.followers || 0}</span>
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   )
 }

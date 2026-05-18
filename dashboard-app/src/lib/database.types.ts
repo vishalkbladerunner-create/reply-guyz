@@ -14,21 +14,39 @@ export interface Database {
           id: string
           name: string
           slug: string
-          platform: string
+          platform: string | null
+          twitter_handle: string | null
+          instagram_handle: string | null
+          telegram_handle: string | null
+          website: string | null
+          description: string | null
+          active_platforms: string[] | null
           created_at: string
         }
         Insert: {
           id?: string
           name: string
           slug: string
-          platform: string
+          platform?: string | null
+          twitter_handle?: string | null
+          instagram_handle?: string | null
+          telegram_handle?: string | null
+          website?: string | null
+          description?: string | null
+          active_platforms?: string[] | null
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
           slug?: string
-          platform?: string
+          platform?: string | null
+          twitter_handle?: string | null
+          instagram_handle?: string | null
+          telegram_handle?: string | null
+          website?: string | null
+          description?: string | null
+          active_platforms?: string[] | null
           created_at?: string
         }
       }

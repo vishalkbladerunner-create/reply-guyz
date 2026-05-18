@@ -53,17 +53,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return { error }
     
-    // Ensure profile exists (fallback if trigger wasn't set up)
+    // Ensure profile exists (fallback if trigger wasn't set up or user was manually created)
     if (data.user) {
-      const { data: existing } = await supabase.from('profiles').select('*').eq('id', data.user.id).single()
-      if (!existing) {
-        const { data: newProfile } = await supabase.from('profiles').insert({
-          id: data.user.id,
-          email: data.user.email,
-          full_name: data.user.user_metadata?.full_name || '',
-          status: 'pending',
-          role: null,
-        } as any).select().single()
+      const { data: existing, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .maybeSingle()
+      
+      if (!existing || fetchError) {
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email: data.user.email,
+            full_name: data.user.user_metadata?.full_name || '',
+            status: 'pending',
+            role: null,
+          } as any)
+          .select()
+          .maybeSingle()
+        
+        if (insertError) {
+          console.error('Profile insert error:', insertError)
+          return { error: new Error('Account profile missing. Please contact admin.') }
+        }
         setUser(newProfile)
       } else {
         setUser(existing)

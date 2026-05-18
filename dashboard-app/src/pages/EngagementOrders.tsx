@@ -1,47 +1,65 @@
-import { useState } from 'react'
-import { ExternalLink, CheckCircle, Clock, Filter } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useClient } from '@/hooks/useClient'
+import { supabase } from '@/lib/supabase'
+import { ExternalLink, CheckCircle, Clock, Filter, Loader2 } from 'lucide-react'
 import { formatNumber } from '@/lib/utils'
-
-interface Order {
-  id: number
-  platform: string
-  link: string
-  postUrl: string
-  date: string
-  followers: number
-  comments: number
-  reposts: number
-  likes: number
-  views: number
-  status: 'Done' | 'Pending' | 'In Progress'
-}
-
-const orders: Order[] = [
-  { id: 1, platform: 'Twitter', link: 'https://x.com/sandmark_news/...', postUrl: 'https://x.com/sandmark_news/status/123', date: '2026-05-04', followers: 0, comments: 0, reposts: 0, likes: 0, views: 1000, status: 'Done' },
-  { id: 2, platform: 'Twitter', link: 'https://x.com/sandmark_news/...', postUrl: 'https://x.com/sandmark_news/status/124', date: '2026-05-04', followers: 0, comments: 0, reposts: 0, likes: 0, views: 500, status: 'Done' },
-  { id: 3, platform: 'Twitter', link: 'https://x.com/sandmark_news/...', postUrl: 'https://x.com/sandmark_news/status/125', date: '2026-05-05', followers: 0, comments: 0, reposts: 0, likes: 0, views: 1000, status: 'Done' },
-  { id: 4, platform: 'Telegram', link: 'https://t.me/sandmark_news/...', postUrl: 'https://t.me/sandmark_news/100', date: '2026-05-05', followers: 0, comments: 0, reposts: 0, likes: 0, views: 200, status: 'Done' },
-  { id: 5, platform: 'Telegram', link: 'https://t.me/sandmark_news/...', postUrl: 'https://t.me/sandmark_news/101', date: '2026-05-06', followers: 0, comments: 0, reposts: 0, likes: 0, views: 500, status: 'Done' },
-  { id: 6, platform: 'Twitter', link: 'https://x.com/sandmark_news/...', postUrl: 'https://x.com/sandmark_news/status/126', date: '2026-05-06', followers: 0, comments: 0, reposts: 0, likes: 0, views: 1000, status: 'Done' },
-  { id: 7, platform: 'Twitter', link: '@sandmark_news', postUrl: '', date: '2026-05-01', followers: 2000, comments: 0, reposts: 0, likes: 0, views: 0, status: 'Done' },
-  { id: 8, platform: 'Telegram', link: 'https://t.me/sandmark_news/...', postUrl: 'https://t.me/sandmark_news/102', date: '2026-05-07', followers: 0, comments: 0, reposts: 0, likes: 0, views: 100, status: 'Done' },
-]
 
 const platformFilters = ['All', 'Twitter', 'Instagram', 'Telegram']
 const statusFilters = ['All', 'Done', 'Pending', 'In Progress']
 
 export default function EngagementOrders() {
+  const { selectedClientId } = useClient()
+  const [orders, setOrders] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [platformFilter, setPlatformFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
 
+  useEffect(() => {
+    if (!selectedClientId) {
+      setLoading(false)
+      return
+    }
+    fetchOrders()
+  }, [selectedClientId])
+
+  const fetchOrders = async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('engagement_orders')
+      .select('*')
+      .eq('client_id', selectedClientId!)
+      .order('order_date', { ascending: false })
+    setOrders(data || [])
+    setLoading(false)
+  }
+
   const filtered = orders.filter((o) => {
-    const matchPlatform = platformFilter === 'All' || o.platform === platformFilter
+    const matchPlatform = platformFilter === 'All' || o.platform?.toLowerCase() === platformFilter.toLowerCase()
     const matchStatus = statusFilter === 'All' || o.status === statusFilter
     return matchPlatform && matchStatus
   })
 
-  const totalViews = filtered.reduce((sum, o) => sum + o.views, 0)
-  const totalFollowers = filtered.reduce((sum, o) => sum + o.followers, 0)
+  const totalViews = filtered.reduce((sum, o) => sum + (o.views_ordered || 0), 0)
+  const totalFollowers = filtered.reduce((sum, o) => sum + (o.followers_ordered || 0), 0)
+
+  if (!selectedClientId) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="font-display text-xl font-medium text-navy mb-2">Select a Client</h2>
+          <p className="text-text-secondary">Choose a company from the sidebar to view engagement orders.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-blue-accent animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -102,62 +120,67 @@ export default function EngagementOrders() {
         </div>
       </div>
 
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-navy/5">
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">#</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Platform</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Link</th>
-                <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Views</th>
-                <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Followers</th>
-                <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Likes</th>
-                <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Reposts</th>
-                <th className="text-center text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Status</th>
-                <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-navy/5">
-              {filtered.map((order) => (
-                <tr key={order.id} className="hover:bg-cream/50 transition-colors">
-                  <td className="py-3 text-sm text-text-muted">{order.id}</td>
-                  <td className="py-3">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                      order.platform === 'Twitter' ? 'bg-blue-50 text-blue-700' :
-                      order.platform === 'Instagram' ? 'bg-pink-50 text-pink-700' :
-                      'bg-sky-50 text-sky-700'
-                    }`}>
-                      {order.platform}
-                    </span>
-                  </td>
-                  <td className="py-3 text-sm text-text-primary max-w-xs truncate">
-                    <a href={order.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-blue-accent transition-colors">
-                      {order.link}
-                      <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                    </a>
-                  </td>
-                  <td className="py-3 text-sm text-text-primary text-right">{formatNumber(order.views)}</td>
-                  <td className="py-3 text-sm text-text-primary text-right">{formatNumber(order.followers)}</td>
-                  <td className="py-3 text-sm text-text-primary text-right">{formatNumber(order.likes)}</td>
-                  <td className="py-3 text-sm text-text-primary text-right">{formatNumber(order.reposts)}</td>
-                  <td className="py-3 text-center">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                      order.status === 'Done' ? 'bg-green-50 text-green-700' :
-                      order.status === 'Pending' ? 'bg-yellow-50 text-yellow-700' :
-                      'bg-blue-50 text-blue-700'
-                    }`}>
-                      {order.status === 'Done' ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="py-3 text-sm text-text-muted whitespace-nowrap">{order.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {orders.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-text-muted">No engagement orders yet for this client.</p>
+          <p className="text-text-muted text-sm mt-1">Add orders via Data Entry → Engagement Order.</p>
         </div>
-      </div>
+      ) : (
+        <div className="card">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-navy/5">
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Platform</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Link</th>
+                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Views</th>
+                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Followers</th>
+                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Likes</th>
+                  <th className="text-right text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Reposts</th>
+                  <th className="text-center text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Status</th>
+                  <th className="text-left text-xs font-semibold text-text-muted uppercase tracking-wider pb-3">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-navy/5">
+                {filtered.map((order) => (
+                  <tr key={order.id} className="hover:bg-cream/50 transition-colors">
+                    <td className="py-3">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                        order.platform === 'twitter' ? 'bg-blue-50 text-blue-700' :
+                        order.platform === 'instagram' ? 'bg-pink-50 text-pink-700' :
+                        'bg-sky-50 text-sky-700'
+                      }`}>
+                        {order.platform}
+                      </span>
+                    </td>
+                    <td className="py-3 text-sm text-text-primary max-w-xs truncate">
+                      <a href={order.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-blue-accent transition-colors">
+                        {order.link}
+                        <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                      </a>
+                    </td>
+                    <td className="py-3 text-sm text-text-primary text-right">{formatNumber(order.views_ordered || 0)}</td>
+                    <td className="py-3 text-sm text-text-primary text-right">{formatNumber(order.followers_ordered || 0)}</td>
+                    <td className="py-3 text-sm text-text-primary text-right">{formatNumber(order.likes_ordered || 0)}</td>
+                    <td className="py-3 text-sm text-text-primary text-right">{formatNumber(order.reposts_ordered || 0)}</td>
+                    <td className="py-3 text-center">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                        order.status === 'Done' ? 'bg-green-50 text-green-700' :
+                        order.status === 'Pending' ? 'bg-yellow-50 text-yellow-700' :
+                        'bg-blue-50 text-blue-700'
+                      }`}>
+                        {order.status === 'Done' ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="py-3 text-sm text-text-muted whitespace-nowrap">{order.order_date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

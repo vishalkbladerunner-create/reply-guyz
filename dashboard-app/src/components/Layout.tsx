@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useClient } from '@/hooks/useClient'
 import {
   LayoutDashboard,
   BarChart3,
@@ -9,34 +10,44 @@ import {
   LogOut,
   ChevronRight,
   Users,
+  Building2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const navItems = [
-  { path: '/', label: 'Overview', icon: LayoutDashboard },
-  { path: '/platform/twitter', label: 'Twitter Analytics', icon: BarChart3 },
-  { path: '/platform/instagram', label: 'Instagram Analytics', icon: BarChart3 },
-  { path: '/platform/telegram', label: 'Telegram Analytics', icon: BarChart3 },
-  { path: '/engagement-orders', label: 'Engagement Orders', icon: ShoppingCart },
-  { path: '/reports', label: 'Reports', icon: FileText },
+const allNavItems = [
+  { path: '/', label: 'Overview', icon: LayoutDashboard, platforms: ['twitter', 'instagram', 'telegram'] },
+  { path: '/platform/twitter', label: 'Twitter Analytics', icon: BarChart3, platforms: ['twitter'] },
+  { path: '/platform/instagram', label: 'Instagram Analytics', icon: BarChart3, platforms: ['instagram'] },
+  { path: '/platform/telegram', label: 'Telegram Analytics', icon: BarChart3, platforms: ['telegram'] },
+  { path: '/engagement-orders', label: 'Engagement Orders', icon: ShoppingCart, platforms: ['twitter', 'instagram', 'telegram'] },
+  { path: '/reports', label: 'Reports', icon: FileText, platforms: ['twitter', 'instagram', 'telegram'] },
 ]
 
 const adminNavItems = [
   { path: '/upload', label: 'Upload Data', icon: Upload },
   { path: '/users', label: 'User Management', icon: Users },
+  { path: '/clients', label: 'Manage Clients', icon: Building2 },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, signOut, isAdmin } = useAuth()
+  const { selectedClientId, clients, setSelectedClientId } = useClient()
 
   const handleSignOut = async () => {
     await signOut()
     navigate('/login')
   }
 
-  const allNavItems = isAdmin ? [...navItems, ...adminNavItems] : navItems
+  const selectedClient = clients.find((c) => c.id === selectedClientId)
+  const activePlatforms = selectedClient?.active_platforms || ['twitter']
+
+  const filteredNavItems = allNavItems.filter((item) =>
+    item.platforms.some((p) => activePlatforms.includes(p))
+  )
+
+  const navItemsToShow = isAdmin ? [...filteredNavItems, ...adminNavItems] : filteredNavItems
 
   return (
     <div className="min-h-screen flex">
@@ -50,9 +61,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <p className="text-xs text-white/40 mt-1">Analytics Dashboard</p>
         </div>
 
+        {/* Client Selector (Admin only) */}
+        {isAdmin && (
+          <div className="px-4 py-3 border-b border-white/10">
+            <label className="text-xs text-white/40 mb-1.5 block">Select Client</label>
+            <select
+              value={selectedClientId || ''}
+              onChange={(e) => setSelectedClientId(e.target.value || null)}
+              className="w-full bg-white/10 text-white text-sm rounded-lg px-3 py-2 border border-white/10 focus:outline-none focus:border-blue-accent"
+            >
+              <option value="" className="bg-navy text-white">— Choose client —</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id} className="bg-navy text-white">{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {allNavItems.map((item) => {
+          {navItemsToShow.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.path
             return (

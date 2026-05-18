@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { useClient } from '@/hooks/useClient'
 import { UploadCloud, FileSpreadsheet, AlertCircle, CheckCircle, X, Plus, Link2, BarChart3, FileJson } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
@@ -14,6 +15,7 @@ interface FilePreview {
 type Tab = 'upload' | 'daily-metrics' | 'posts' | 'engagement-orders' | 'import-json'
 
 export default function Upload() {
+  const { selectedClientId } = useClient()
   const [activeTab, setActiveTab] = useState<Tab>('daily-metrics')
   const [isDragging, setIsDragging] = useState(false)
   const [previews, setPreviews] = useState<FilePreview[]>([])
@@ -103,8 +105,7 @@ export default function Upload() {
         throw new Error('JSON must be a non-empty array')
       }
 
-      const clientId = await getClientId()
-      if (!clientId) throw new Error('Client not found')
+      if (!selectedClientId) throw new Error('No client selected. Please select a client from the sidebar.')
 
       const posts = data.map((item: any) => {
         const rawDate = getField(item, 'date', 'timestamp', 'created_at', 'published_at')
@@ -138,7 +139,7 @@ export default function Upload() {
         const engagementRate = impressions > 0 ? ((engagements / impressions) * 100).toFixed(2) : null
 
         return {
-          client_id: clientId,
+          client_id: selectedClientId,
           platform: jsonPlatform,
           post_date: postDate,
           post_time: postTime,
@@ -235,19 +236,13 @@ export default function Upload() {
     setPreviews([])
   }
 
-  const getClientId = async () => {
-    const { data } = await supabase.from('clients').select('id').eq('slug', 'sandmark').single()
-    return (data as any)?.id
-  }
-
   const submitDailyMetric = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     try {
-      const clientId = await getClientId()
-      if (!clientId) throw new Error('Client not found')
+      if (!selectedClientId) throw new Error('No client selected')
       const payload = {
-        client_id: clientId,
+        client_id: selectedClientId,
         platform: dailyMetric.platform,
         metric_date: dailyMetric.metric_date,
         impressions: Number(dailyMetric.impressions) || 0,
@@ -277,12 +272,11 @@ export default function Upload() {
     e.preventDefault()
     setLoading(true)
     try {
-      const clientId = await getClientId()
-      if (!clientId) throw new Error('Client not found')
+      if (!selectedClientId) throw new Error('No client selected')
       const totalEngagement = (Number(post.likes) || 0) + (Number(post.reposts) || 0) + (Number(post.comments) || 0) + (Number(post.shares) || 0) + (Number(post.reactions) || 0)
       const engagementRate = post.impressions ? ((totalEngagement / Number(post.impressions)) * 100).toFixed(2) : null
       const payload = {
-        client_id: clientId,
+        client_id: selectedClientId,
         platform: post.platform,
         post_date: post.post_date,
         post_time: post.post_time || null,
@@ -311,10 +305,9 @@ export default function Upload() {
     e.preventDefault()
     setLoading(true)
     try {
-      const clientId = await getClientId()
-      if (!clientId) throw new Error('Client not found')
+      if (!selectedClientId) throw new Error('No client selected')
       const payload = {
-        client_id: clientId,
+        client_id: selectedClientId,
         platform: order.platform,
         link: order.link,
         post_url: order.post_url || null,
